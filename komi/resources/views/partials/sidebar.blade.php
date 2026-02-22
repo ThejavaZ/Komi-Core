@@ -7,7 +7,7 @@
                 Dashboard
             </a>
 
-            <a class="nav-link" href="{{ route('home') }}">
+            <a class="nav-link" href="{{ route('communities.index') }}">
                 <div class="sb-nav-link-icon"><i class="fas fa-church"></i></div>
                 Comunidades
             </a>
@@ -101,6 +101,6 @@
     </div>
     <div class="sb-sidenav-footer">
         <div class="small">Logged in as:</div>
-        User
+        {{ Auth::user()->name }}
     </div>
 </nav>

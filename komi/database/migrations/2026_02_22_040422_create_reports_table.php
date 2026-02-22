@@ -11,15 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('communities', function (Blueprint $table) {
+        Schema::create('reports', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('slug');
-            $table->text('description')->nullable();
-            $table->string('icon');
-            $table->string('banner');
-            $table->foreignId('owner_id')->constrained('users')->onDelete('cascade');
-            $table->integer('status')->default(1);
+            $table->foreignId('reporter_id')->constrained('users')->onDelete('cascade');
+            $table->enum('reportable_type', ['post', 'comment','user'])->nullable();
+            $table->foreignId('target_id')->nullable();
+            $table->text('reason')->nullable();
+            $table->integer('status')->default(0);
             $table->boolean('is_active')->default(1);
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
@@ -34,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('communities');
+        Schema::dropIfExists('reports');
     }
 };

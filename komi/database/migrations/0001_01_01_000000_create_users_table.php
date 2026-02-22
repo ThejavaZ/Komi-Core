@@ -19,11 +19,12 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('avatar')->nullable();
-            $table->integer('role');
-            $table->integer('language');
+            $table->integer('role')->default(0);
+            $table->integer('language')->default(1);
             $table->text('bio')->nullable();
             $table->text('description')->nullable();
-            $table->boolean('status')->default(1);
+            $table->tinyInteger('status')->default(1);
+            $table->boolean('is_active')->default(1);
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();

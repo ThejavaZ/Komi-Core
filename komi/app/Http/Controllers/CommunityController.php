@@ -12,7 +12,9 @@ class CommunityController extends Controller
      */
     public function index()
     {
-        //
+        $counter = 1;
+        $communities = Community::where('is_active', 1)->get();
+        return view('communities.index', compact('communities', 'counter'));
     }
 
     /**
@@ -20,7 +22,7 @@ class CommunityController extends Controller
      */
     public function create()
     {
-        //
+        return view('communities.create');
     }
 
     /**
@@ -28,15 +30,15 @@ class CommunityController extends Controller
      */
     public function store(Request $request)
     {
-        //
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Community $community)
+    public function show($id)
     {
-        //
+        $community = Community::where('id', $id)->where('is_active', 1)->firstOrFail();
+        return view('communities.show', compact('community'));
     }
 
     /**
