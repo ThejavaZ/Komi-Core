@@ -1,11 +1,11 @@
 @extends('layout.main')
 
-@section('title', 'Comunidades')
+@section('title', 'Usuarios')
 
 @section('breadcrumb')
 <li class="breadcrumb-item">
     <a href="{{ route('home') }}">Dashboard</a></li>
-<li class="breadcrumb-item active">Comunidades</li>
+<li class="breadcrumb-item active">Usuarios</li>
 @endsection
 
 @section('content')
@@ -31,8 +31,8 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <i class="fas fa-church me-1"></i>
-        Comunidades
+        <i class="fas fa-users"></i>
+        Usuarios
     </div>
     <div class="card-body">
         <table id="datatablesSimple">
@@ -40,9 +40,9 @@
                 <tr>
                     <th>No.</th>
                     <th>Nombre</th>
-                    <th>Slug</th>
-                    <th>Descripcion</th>
-                    <th>Dueño</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Idioma</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                     <th>Reportes</th>
@@ -52,38 +52,78 @@
                 <tr>
                     <th>No.</th>
                     <th>Nombre</th>
-                    <th>Slug</th>
-                    <th>Descripcion</th>
-                    <th>Dueño</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Idioma</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                     <th>Reportes</th>
                 </tr>
             </tfoot>
             <tbody>
-                @foreach ($communities as $community)
+                @foreach ($users as $user)
                 <tr>
                     <td>{{ $counter++ }}</td>
-                    <td>{{ $community->name }}</td>
-                    <td>{{ $community->slug }}</td>
-                    <td>{{ $community->description }}</td>
-                    <td>{{ $community->owner->name ?? 'No Owner' }}</td>
-                    <td>{{ $community->is_active ? 'Activo' : 'Inactivo' }}</td>
+                    <td>{{ $user->name }}</td>
+                    <td>{{ $user->email }}</td>
                     <td>
-                        <a href="{{ route('communities.show', encrypt($community->id)) }}" class="btn btn-lg btn-outline-info">
+                        @switch($user->role)
+                            @case(1)
+                                Super Admin
+                                @break
+                            
+                                @case(2)
+                                    Administrador
+                                @break
+
+                                @case(3)
+                                    Operador
+                                @break
+                        
+                            @default
+                                No info
+                        @endswitch
+                    </td>
+                    <td>
+                        @switch($user->language)
+                            @case(1)
+                                Español
+                                @break
+
+                            @case(2)
+                                Inglés
+                            @break
+                            @default
+                                No info
+                        @endswitch
+                    </td>
+                    <td>
+                        @switch($user->status)
+                            @case(1)
+                                Activo
+                                @break
+                            @case(2)
+                                Inactivo
+                            @break
+                            @default
+                                No info
+                        @endswitch
+                    </td>
+                    <td>
+                        <a href="{{ route('communities.show', $user->id) }}" class="btn btn-lg btn-outline-info">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{{ route('communities.edit', encrypt($community->id)) }}" class="btn btn-lg btn-outline-warning">
+                        {{-- <a href="{{ route('communities.edit', $user) }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-edit"></i>
                         </a>
-                        {{-- <form action="{{ route('communities.destroy', $community) }}" method="POST" class="d-inline">
+                        <form action="{{ route('communities.destroy', $user) }}" method="POST" class="d-inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-outline-danger">
                                 <i class="fas fa-trash"></i>
                             </button>
-                        </form>
-                    </td> --}}
+                        </form>  --}}
+                    </td>
                     <td>
                         <a href="" class="btn btn-lg btn-outline-danger">
                             <i class="fas fa-file-pdf"></i>

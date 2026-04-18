@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Community;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 
 class CommunityController extends Controller
 {
@@ -22,7 +24,8 @@ class CommunityController extends Controller
      */
     public function create()
     {
-        return view('communities.create');
+        $users = User::where('is_active', 1)->get();
+        return view('communities.create', compact('users'));
     }
 
     /**
@@ -30,6 +33,10 @@ class CommunityController extends Controller
      */
     public function store(Request $request)
     {
+        $data = $request->validate([
+            ''
+        ]);
+
     }
 
     /**
@@ -37,16 +44,18 @@ class CommunityController extends Controller
      */
     public function show($id)
     {
-        $community = Community::where('id', $id)->where('is_active', 1)->firstOrFail();
+        $community = Community::where('id', Crypt::decrypt($id))->where('is_active', 1)->firstOrFail();
         return view('communities.show', compact('community'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Community $community)
+    public function edit($id)
     {
-        //
+        $users = User::where('is_active', 1)->get();
+        $community = Community::where('id', Crypt::decrypt($id))->where('is_active', 1)->firstOrFail();
+        return view('communities.edit', compact('community', 'users'));
     }
 
     /**

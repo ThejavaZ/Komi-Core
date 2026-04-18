@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
@@ -11,8 +12,9 @@ class UserController extends Controller
      */
     public function index()
     {
+        $counter = 1;
         $users = User::where('is_active', 1)->get();
-        return view('users.index', compact('users'));
+        return view('users.index', compact('users', 'counter'));
     }
 
     /**

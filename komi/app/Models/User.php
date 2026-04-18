@@ -21,6 +21,16 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
+        'role',
+        'language',
+        'bio',
+        'description',
+        'status',
+        'is_active',
+        'created_by',
+        'updated_by',
+        'deleted_by'
     ];
 
     /**
@@ -44,5 +54,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function userCreated(){
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

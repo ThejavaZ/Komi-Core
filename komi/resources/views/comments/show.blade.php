@@ -16,20 +16,19 @@
     <a href="" class="btn btn-lg btn-outline-danger">
         <i class="fas fa-file-pdf"></i>
     </a>
-
-    <a href="" class="btn btn-lg btn-outline-success">
-        <i class="fas fa-file-excel"></i>
-    </a>
-    <a href="" class="btn btn-lg btn-outline-primary">
+    <a href="">
         <i class="fas fa-file-word"></i>
     </a>
-    <a href="{{ route('communities.edit', encrypt($community->id)) }}" class="btn btn-lg btn-outline-warning">
+    <a href="">
+        <i class="fas fa-file-excel"></i>
+    </a>
+    <a href="">
         <i class="fas fa-edit"></i>
     </a>
 </div>
 
 <div class="d-flex justify-content-center">
-    <div class="card mb-4">
+    <div class="card mb-4" style="width: 50%;">
         <div class="card-header">
             <i class="fas fa-church me-1"></i>
             {{ $community->name }}

@@ -39,7 +39,7 @@
             </a>
 
 
-            <a class="nav-link" href="{{ route('home') }}">
+            <a class="nav-link" href="{{ route('users.index') }}">
                 <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
                 Usuarios
             </a>

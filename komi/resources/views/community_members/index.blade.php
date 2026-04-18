@@ -45,7 +45,6 @@
                     <th>Dueño</th>
                     <th>Estado</th>
                     <th>Acciones</th>
-                    <th>Reportes</th>
                 </tr>
             </thead>
             <tfoot>
@@ -57,7 +56,6 @@
                     <th>Dueño</th>
                     <th>Estado</th>
                     <th>Acciones</th>
-                    <th>Reportes</th>
                 </tr>
             </tfoot>
             <tbody>
@@ -70,13 +68,13 @@
                     <td>{{ $community->owner->name ?? 'No Owner' }}</td>
                     <td>{{ $community->is_active ? 'Activo' : 'Inactivo' }}</td>
                     <td>
-                        <a href="{{ route('communities.show', encrypt($community->id)) }}" class="btn btn-lg btn-outline-info">
+                        <a href="{{ route('communities.show', $community->id) }}" class="btn btn-lg btn-outline-info">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{{ route('communities.edit', encrypt($community->id)) }}" class="btn btn-lg btn-outline-warning">
+                        {{-- <a href="{{ route('communities.edit', $community) }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-edit"></i>
                         </a>
-                        {{-- <form action="{{ route('communities.destroy', $community) }}" method="POST" class="d-inline">
+                        <form action="{{ route('communities.destroy', $community) }}" method="POST" class="d-inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -84,20 +82,6 @@
                             </button>
                         </form>
                     </td> --}}
-                    <td>
-                        <a href="" class="btn btn-lg btn-outline-danger">
-                            <i class="fas fa-file-pdf"></i>
-                        </a>
-                        <a href="" class="btn btn-lg btn-outline-success">
-                            <i class="fas fa-file-excel"></i>
-                        </a>
-                        <a href="" class="btn btn-lg btn-outline-primary">
-                            <i class="fas fa-file-word"></i>
-                        </a>
-                        <a href="" class="btn btn-lg btn-outline-info">
-                            <i class="fas fa-envelope"></i>
-                        </a>
-                    </td>
                 </tr>
                 @endforeach
 
