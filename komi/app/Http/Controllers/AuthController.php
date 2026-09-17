@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 use App\Mail\SendOtpMail;
-
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -34,7 +32,7 @@ class AuthController extends Controller
 
         // ⏱️ 2. Lo guardamos en Cache asociado al correo por 10 minutos (600 segundos)
         // ⚡ CORREGIDO: Ahora usa la variable correcta $otpCode y coincide con los 10 minutos de expiración
-        Cache::put('otp_' . $user->email, $otpCode, now()->addMinutes(10));
+        Cache::put('otp_'.$user->email, $otpCode, now()->addMinutes(10));
 
         // 📧 3. Enviamos el correo real a través de Mailpit
         // ⚡ CORREGIDO: Enviamos la variable correcta $otpCode al constructor de tu Mailable
@@ -45,8 +43,7 @@ class AuthController extends Controller
             'message' => 'Usuario registrado con éxito. Código de verificación enviado al correo.',
             'data' => [
                 'email' => $user->email,
-                'debug_otp' => $otpCode // Lo dejamos aquí por si necesitas verlo en tu consola de Flutter sin abrir Mailpit
-            ]
+            ],
         ], 201);
     }
 
@@ -59,21 +56,21 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Usuario no encontrado.'
+                'message' => 'Usuario no encontrado.',
             ], 404);
         }
 
         // 🔍 1. Recuperamos el código que guardamos en Cache para este correo
-        $cachedOtp = Cache::get('otp_' . $request->email);
+        $cachedOtp = Cache::get('otp_'.$request->email);
 
         // 2. Si no hay código en caché, es porque ya expiró (pasaron más de 10 mins)
-        if (!$cachedOtp) {
+        if (! $cachedOtp) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'El código de verificación ha expirado o no existe. Solicita uno nuevo.'
+                'message' => 'El código de verificación ha expirado o no existe. Solicita uno nuevo.',
             ], 400);
         }
 
@@ -81,7 +78,7 @@ class AuthController extends Controller
         if ($request->code !== (string) $cachedOtp) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'El código de verificación es incorrecto.'
+                'message' => 'El código de verificación es incorrecto.',
             ], 400);
         }
 
@@ -93,7 +90,7 @@ class AuthController extends Controller
         ]);
 
         // 🧹 Limpiamos la caché del código ya usado para que no se pueda reutilizar
-        Cache::forget('otp_' . $request->email);
+        Cache::forget('otp_'.$request->email);
 
         // 5. Emitimos token de acceso
         $token = $user->createToken('komi_auth_token')->plainTextToken;
@@ -102,7 +99,7 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => '¡Cuenta verificada y activada con éxito!',
             'token' => $token,
-            'user' => new UserResource($user)
+            'user' => new UserResource($user),
         ], 200);
     }
 
@@ -113,10 +110,10 @@ class AuthController extends Controller
     {
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Las credenciales no coinciden con nuestros registros.'
+                'message' => 'Las credenciales no coinciden con nuestros registros.',
             ], 401);
         }
 
@@ -124,14 +121,14 @@ class AuthController extends Controller
         if ($user->status === 'banned') {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Tu cuenta ha sido permanentemente baneada de Komi.'
+                'message' => 'Tu cuenta ha sido permanentemente baneada de Komi.',
             ], 403);
         }
 
         if ($user->status === 'suspended') {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Tu cuenta se encuentra temporalmente suspendida.'
+                'message' => 'Tu cuenta se encuentra temporalmente suspendida.',
             ], 403);
         }
 
@@ -139,7 +136,7 @@ class AuthController extends Controller
         if ($user->status === 'pending') {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Por favor, verifica tu cuenta primero.'
+                'message' => 'Por favor, verifica tu cuenta primero.',
             ], 403);
         }
 
@@ -149,7 +146,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'token' => $token,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -163,7 +160,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Sesión cerrada con éxito. Token revocado.'
+            'message' => 'Sesión cerrada con éxito. Token revocado.',
         ], 200);
     }
 }
