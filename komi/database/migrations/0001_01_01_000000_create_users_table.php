@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
+/**
      * Run the migrations.
      */
     public function up(): void
@@ -14,23 +14,32 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('username')->unique();
+            $table->string('username')->unique(); // 🔑 Súper importante que el @usuario no se repita
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('avatar')->nullable();
-            $table->integer('role')->default(0);
-            $table->integer('language')->default(1);
+
+            // Datos del Perfil (Opcionales al registrarse, por eso usan nullable)
+            $table->date('birth_date')->nullable();
             $table->text('bio')->nullable();
-            $table->text('description')->nullable();
-            $table->tinyInteger('status')->default(1);
-            $table->boolean('is_active')->default(1);
-            $table->integer('created_by')->nullable();
-            $table->integer('updated_by')->nullable();
-            $table->integer('deleted_by')->nullable();
+            $table->string('avatar')->nullable(); // Guardará la URL de su foto
+            $table->string('banner')->nullable(); // Guardará la URL de su banner
+
+            // Preferencias guardadas del usuario
+            $table->string('theme_color')->default('deepPurple'); // 🎨 ¡Aquí guardamos su color dinámico de Flutter!
+
+            // Configuración de cuenta y roles
+            $table->boolean('is_verified')->default(false);      // Empieza sin palomita azul
+            $table->boolean('is_premium')->default(false);       // Empieza sin plan premium
+            $table->boolean('is_global_admin')->default(false);  // Empieza como usuario normal
+
+            // Estado de la cuenta (Definiendo las opciones del ENUM y su default)
+            $table->enum('status', ['pending', 'active', 'suspended', 'banned'])->default('pending');
+            $table->enum('gender', ['male', 'female', 'unspecified'])->default('unspecified');
+
             $table->rememberToken();
             $table->timestamps();
-            $table->softDeletes();
+            $table->softDeletes(); // Para borrado lógico (quedarse en la DB pero oculto)
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

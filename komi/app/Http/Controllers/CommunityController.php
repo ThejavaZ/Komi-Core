@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCommunityRequest;
+use App\Http\Requests\UpdateCommunityRequest;
 use App\Models\Community;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 
 class CommunityController extends Controller
 {
@@ -14,9 +13,7 @@ class CommunityController extends Controller
      */
     public function index()
     {
-        $counter = 1;
-        $communities = Community::where('is_active', 1)->get();
-        return view('communities.index', compact('communities', 'counter'));
+        //
     }
 
     /**
@@ -24,44 +21,37 @@ class CommunityController extends Controller
      */
     public function create()
     {
-        $users = User::where('is_active', 1)->get();
-        return view('communities.create', compact('users'));
+        //
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreCommunityRequest $request)
     {
-        $data = $request->validate([
-            ''
-        ]);
-
+        //
     }
 
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show(Community $community)
     {
-        $community = Community::where('id', Crypt::decrypt($id))->where('is_active', 1)->firstOrFail();
-        return view('communities.show', compact('community'));
+        //
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit(Community $community)
     {
-        $users = User::where('is_active', 1)->get();
-        $community = Community::where('id', Crypt::decrypt($id))->where('is_active', 1)->firstOrFail();
-        return view('communities.edit', compact('community', 'users'));
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Community $community)
+    public function update(UpdateCommunityRequest $request, Community $community)
     {
         //
     }
