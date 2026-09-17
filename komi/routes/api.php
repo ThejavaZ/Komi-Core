@@ -35,6 +35,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dar / quitar like a una publicación
     Route::post('/posts/{post}/like', [PostController::class, 'toggleLike']);
 
+    // Eliminar una publicación (solo el propietario, soft delete)
+    Route::delete('/posts/{post}', [PostController::class, 'destroy']);
+
     // Listar comentarios de una publicación
     Route::get('/posts/{post}/comments', [CommentController::class, 'index']);
 

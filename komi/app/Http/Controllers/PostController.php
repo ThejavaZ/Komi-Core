@@ -57,6 +57,26 @@ class PostController extends Controller
     }
 
     /**
+     * Remove the resource from storage (soft delete).
+     *
+     * Solo el propietario del post puede eliminarlo; el registro se conserva
+     * (SoftDeletes) y el recurso deja de exponer su contenido y autor.
+     */
+    public function destroy(Request $request, Post $post): JsonResponse
+    {
+        if ($request->user()->id !== $post->user_id) {
+            abort(403, 'No tienes permiso para eliminar esta publicación.');
+        }
+
+        $post->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Publicación eliminada.',
+        ]);
+    }
+
+    /**
      * Give or remove a like to the specified post atomically.
      */
     public function toggleLike(Request $request, Post $post): JsonResponse

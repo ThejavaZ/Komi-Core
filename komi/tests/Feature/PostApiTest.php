@@ -109,4 +109,75 @@ class PostApiTest extends TestCase
             'post_id' => $post->id,
         ]);
     }
+
+    public function test_delete_post_requires_authentication(): void
+    {
+        $post = Post::create([
+            'user_id' => User::factory()->create()->id,
+            'content' => 'Post a eliminar',
+        ]);
+
+        $this->deleteJson("/api/posts/{$post->id}")->assertUnauthorized();
+
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'deleted_at' => null,
+        ]);
+    }
+
+    public function test_owner_can_soft_delete_their_post(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::create([
+            'user_id' => $user->id,
+            'content' => 'Adiós Komi',
+            'likes_count' => 3,
+            'comments_count' => 1,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->deleteJson("/api/posts/{$post->id}")
+            ->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $this->assertSoftDeleted('posts', [
+            'id' => $post->id,
+        ]);
+    }
+
+    public function test_non_owner_cannot_delete_a_post(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create();
+        $post = Post::create([
+            'user_id' => $owner->id,
+            'content' => 'Post ajeno',
+        ]);
+
+        Sanctum::actingAs($intruder);
+
+        $this->deleteJson("/api/posts/{$post->id}")->assertForbidden();
+
+        $this->assertDatabaseHas('posts', [
+            'id' => $post->id,
+            'deleted_at' => null,
+        ]);
+    }
+
+    public function test_feed_masks_deleted_posts(): void
+    {
+        $user = User::factory()->create();
+        $deleted = Post::create([
+            'user_id' => $user->id,
+            'content' => 'Contenido secreto',
+        ]);
+        $deleted->delete();
+
+        // Los posts eliminados no aparecen en el feed.
+        $this->assertDatabaseMissing('posts', [
+            'id' => $deleted->id,
+            'deleted_at' => null,
+        ]);
+    }
 }
