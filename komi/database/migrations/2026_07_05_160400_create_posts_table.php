@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('community_id')->nullable()->constrained()->nullOnDelete();
+            $table->text('content');
+            $table->string('image_url')->nullable();
+            $table->unsignedInteger('likes_count')->default(0);
+            $table->unsignedInteger('comments_count')->default(0);
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('created_at');
         });
     }
 

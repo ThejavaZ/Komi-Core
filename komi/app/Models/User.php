@@ -7,6 +7,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes; // 🔑 Agregado para soportar deleted_at
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -26,11 +28,11 @@ use Laravel\Sanctum\HasApiTokens; // 🔒 Necesario para emitir tokens en Flutte
     'status',
     'is_verified',
     'is_premium',
-    'is_global_admin'
+    'is_global_admin',
 ])]
 #[Hidden([
     'password',
-    'remember_token'
+    'remember_token',
 ])]
 class User extends Authenticatable
 {
@@ -52,5 +54,15 @@ class User extends Authenticatable
             'is_premium' => 'boolean',
             'is_global_admin' => 'boolean',
         ];
+    }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    public function communities(): BelongsToMany
+    {
+        return $this->belongsToMany(Community::class, 'community_users');
     }
 }
