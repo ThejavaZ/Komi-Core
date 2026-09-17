@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\UserController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -32,5 +34,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dar / quitar like a una publicación
     Route::post('/posts/{post}/like', [PostController::class, 'toggleLike']);
+
+    // Listar comentarios de una publicación
+    Route::get('/posts/{post}/comments', [CommentController::class, 'index']);
+
+    // Crear un comentario (soporta respuestas anidadas con parent_id)
+    Route::post('/posts/{post}/comments', [CommentController::class, 'store']);
+
+    // Actualizar el perfil del usuario autenticado
+    Route::put('/user/profile', [UserController::class, 'updateProfile']);
 
 });

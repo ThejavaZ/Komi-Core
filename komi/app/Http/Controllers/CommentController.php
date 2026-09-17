@@ -3,64 +3,58 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCommentRequest;
-use App\Http\Requests\UpdateCommentRequest;
+use App\Http\Resources\CommentResource;
 use App\Models\Comment;
+use App\Models\Post;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 
 class CommentController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display the comments of the given post with their author loaded.
      */
-    public function index()
+    public function index(Request $request, Post $post): AnonymousResourceCollection
     {
-        //
+        $comments = $post->comments()
+            ->with(['user'])
+            ->latest()
+            ->paginate(20);
+
+        return CommentResource::collection($comments);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Store a newly created comment for the given post.
      */
-    public function create()
+    public function store(StoreCommentRequest $request, Post $post): JsonResponse
     {
-        //
-    }
+        $parentId = $request->validated('parent_id');
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreCommentRequest $request)
-    {
-        //
-    }
+        if ($parentId !== null && ! Comment::whereKey($parentId)->where('post_id', $post->id)->exists()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'El comentario padre no pertenece a esta publicación.',
+            ], 422);
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Comment $comment)
-    {
-        //
-    }
+        $comment = DB::transaction(function () use ($request, $post, $parentId): Comment {
+            $comment = Comment::create([
+                'user_id' => $request->user()->id,
+                'post_id' => $post->id,
+                'parent_id' => $parentId,
+                'content' => $request->validated('content'),
+            ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Comment $comment)
-    {
-        //
-    }
+            $post->increment('comments_count');
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCommentRequest $request, Comment $comment)
-    {
-        //
-    }
+            return $comment;
+        });
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Comment $comment)
-    {
-        //
+        $comment->load('user');
+
+        return (new CommentResource($comment))->response()->setStatusCode(201);
     }
 }
