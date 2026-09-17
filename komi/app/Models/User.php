@@ -18,6 +18,7 @@ use Laravel\Sanctum\HasApiTokens; // 🔒 Necesario para emitir tokens en Flutte
     'name',
     'username',
     'email',
+    'email_verified_at',
     'password',
     'birth_date',
     'bio',
@@ -29,6 +30,8 @@ use Laravel\Sanctum\HasApiTokens; // 🔒 Necesario para emitir tokens en Flutte
     'is_verified',
     'is_premium',
     'is_global_admin',
+    'provider',
+    'provider_id',
 ])]
 #[Hidden([
     'password',

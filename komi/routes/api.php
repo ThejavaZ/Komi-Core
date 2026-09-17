@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
@@ -15,6 +16,9 @@ Route::middleware('throttle:6,1')->group(function () {
 });
 
 Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+
+// Inicio de sesión social unificado (Google, Facebook, Twitter) vía token OAuth2
+Route::middleware('throttle:5,1')->post('/auth/social-login', [SocialAuthController::class, 'socialLogin']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
