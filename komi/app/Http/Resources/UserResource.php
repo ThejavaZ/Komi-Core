@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'is_verified' => $this->is_verified,
             'is_premium' => $this->is_premium,
             'status' => $this->status,
+            'created_at' => $this->created_at?->toISOString(),
         ];
     }
 }
