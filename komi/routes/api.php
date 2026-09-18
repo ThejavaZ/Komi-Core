@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\TelemetryController;
 use App\Http\Controllers\UserController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
@@ -19,6 +20,9 @@ Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login
 
 // Inicio de sesión social unificado (Google, Facebook, Twitter) vía token OAuth2
 Route::middleware('throttle:5,1')->post('/auth/social-login', [SocialAuthController::class, 'socialLogin']);
+
+// Telemetría: recibe errores del cliente (Flutter), deduplicados por error_hash.
+Route::middleware('throttle:30,1')->post('/telemetry/logs', [TelemetryController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
