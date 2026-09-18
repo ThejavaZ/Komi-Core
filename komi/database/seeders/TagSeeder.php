@@ -2,16 +2,26 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Tag;
 use Illuminate\Database\Seeder;
 
 class TagSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        //
+        $tags = [
+            'tecnologia', 'programacion', 'flutter', 'laravel', 'ia',
+            'gaming', 'anime', 'musica', 'arte', 'ciencia',
+            'deportes', 'filosofia', 'humor', 'noticias', 'tutoriales',
+            'opensource', 'linux', 'python', 'javascript', 'diseño',
+            'fotografia', 'cinema', 'libros', 'recetas', 'viajes',
+        ];
+
+        foreach ($tags as $name) {
+            Tag::firstOrCreate(
+                ['name' => $name],
+                ['slug' => \Illuminate\Support\Str::slug($name)]
+            );
+        }
     }
 }

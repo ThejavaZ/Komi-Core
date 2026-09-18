@@ -6,6 +6,7 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
 use App\Models\Reaction;
+use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -13,41 +14,70 @@ use Illuminate\Support\Facades\DB;
 
 class PostController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request): AnonymousResourceCollection
     {
+        $perPage = min((int) $request->input('per_page', 15), 50);
+
         $posts = Post::query()
-            ->with(['user', 'community'])
+            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
             ->latest()
-            ->paginate(15);
+            ->paginate($perPage);
 
         return PostResource::collection($posts);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StorePostRequest $request): PostResource
     {
         $data = $request->validated();
 
         $imageUrl = $data['image_url'] ?? null;
+        $type = $data['type'] ?? 'text';
 
         if ($request->hasFile('image')) {
             $imageUrl = $request->file('image')->store('posts', 'public');
         }
 
+        if (!empty($data['poll_options']) && is_array($data['poll_options'])) {
+            $type = 'poll';
+        }
+
         $post = $request->user()->posts()->create([
             'community_id' => $data['community_id'] ?? null,
             'content' => $data['content'],
+            'type' => $type,
             'image_url' => $imageUrl,
         ]);
 
-        $post->load(['user', 'community'])->loadCount('comments');
+        if ($type === 'poll' && !empty($data['poll_options'])) {
+            foreach ($data['poll_options'] as $optionText) {
+                $post->pollOptions()->create([
+                    'option_text' => $optionText,
+                ]);
+            }
+        }
+
+        if (!empty($data['tags']) && is_array($data['tags'])) {
+            $tagIds = collect($data['tags'])
+                ->map(function (string $tagName) {
+                    $clean = strtolower(ltrim(trim($tagName), '#'));
+                    $clean = preg_replace('/[^a-z0-9áéíóúñü_-]/u', '', $clean);
+                    return $clean;
+                })
+                ->filter()
+                ->unique()
+                ->take(5)
+                ->map(fn (string $slug) => Tag::firstOrCreate(
+                    ['slug' => $slug],
+                    ['name' => $slug]
+                )->id)
+                ->toArray();
+
+            $post->tags()->sync($tagIds);
+        }
+
+        $post->load(['user', 'community', 'pollOptions', 'tags'])->loadCount('comments');
         $post->is_liked_by_me = false;
 
         return (new PostResource($post))->additional([
@@ -56,12 +86,6 @@ class PostController extends Controller
         ]);
     }
 
-    /**
-     * Remove the resource from storage (soft delete).
-     *
-     * Solo el propietario del post puede eliminarlo; el registro se conserva
-     * (SoftDeletes) y el recurso deja de exponer su contenido y autor.
-     */
     public function destroy(Request $request, Post $post): JsonResponse
     {
         if ($request->user()->id !== $post->user_id) {
@@ -76,9 +100,6 @@ class PostController extends Controller
         ]);
     }
 
-    /**
-     * Give or remove a like to the specified post atomically.
-     */
     public function toggleLike(Request $request, Post $post): JsonResponse
     {
         $userId = $request->user()->id;

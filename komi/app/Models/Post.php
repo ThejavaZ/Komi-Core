@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -12,24 +14,25 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'user_id',
     'community_id',
     'content',
+    'type',
     'image_url',
     'likes_count',
     'comments_count',
+    'vote_score',
+    'reposts_count',
+    'original_post_id',
 ])]
 class Post extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'likes_count' => 'integer',
             'comments_count' => 'integer',
+            'vote_score' => 'integer',
+            'reposts_count' => 'integer',
         ];
     }
 
@@ -51,5 +54,40 @@ class Post extends Model
     public function reactions(): HasMany
     {
         return $this->hasMany(Reaction::class);
+    }
+
+    public function pollOptions(): HasMany
+    {
+        return $this->hasMany(PollOption::class);
+    }
+
+    public function pollVotes(): HasMany
+    {
+        return $this->hasManyThrough(PollVote::class, PollOption::class);
+    }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class);
+    }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
+    public function reposts(): HasMany
+    {
+        return $this->hasMany(self::class, 'original_post_id');
+    }
+
+    public function originalPost(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'original_post_id');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'post_tags', 'post_id', 'tag_id');
     }
 }
