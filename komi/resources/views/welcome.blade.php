@@ -16,12 +16,6 @@
             </div>
             <span class="text-xl font-bold tracking-tight">Komi</span>
         </div>
-        <a
-            href="/admin/login"
-            class="text-sm text-gray-400 hover:text-white transition-colors"
-        >
-            Acceder al panel &rarr;
-        </a>
     </nav>
 
     <!-- Hero -->
@@ -29,7 +23,7 @@
         <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-transparent to-purple-600/15"></div>
         <div class="relative max-w-4xl mx-auto px-6 py-28 text-center">
             <div class="inline-block text-sm font-medium text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-1.5 mb-8">
-                Plataforma social en crecimiento
+                Disponible para Android
             </div>
             <h1 class="text-5xl sm:text-6xl font-bold tracking-tight leading-tight mb-6">
                 Conecta con<br/>tu comunidad
@@ -39,10 +33,10 @@
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a
-                    href="/admin/login"
+                    href="/"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
                 >
-                    Entrar al Panel
+                    Listo para empezar
                 </a>
                 <a
                     href="#features"
@@ -84,7 +78,6 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Feature 1 -->
             <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-7 hover:border-gray-700 transition-colors">
                 <div class="w-11 h-11 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-5">
                     <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -95,7 +88,6 @@
                 <p class="text-sm text-gray-400 leading-relaxed">Crea o únete a comunidades sobre cualquier tema. Comparte contenido con personas que piensan como tú.</p>
             </div>
 
-            <!-- Feature 2 -->
             <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-7 hover:border-gray-700 transition-colors">
                 <div class="w-11 h-11 rounded-xl bg-green-500/10 flex items-center justify-center mb-5">
                     <svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -106,7 +98,6 @@
                 <p class="text-sm text-gray-400 leading-relaxed">Crea encuestas con múltiples opciones y descubre qué piensa la comunidad en tiempo real.</p>
             </div>
 
-            <!-- Feature 3 -->
             <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-7 hover:border-gray-700 transition-colors">
                 <div class="w-11 h-11 rounded-xl bg-orange-500/10 flex items-center justify-center mb-5">
                     <svg class="w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -117,7 +108,6 @@
                 <p class="text-sm text-gray-400 leading-relaxed">Upvote o downvote las publicaciones. El contenido con mejor puntuación sube al top.</p>
             </div>
 
-            <!-- Feature 4 -->
             <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-7 hover:border-gray-700 transition-colors">
                 <div class="w-11 h-11 rounded-xl bg-purple-500/10 flex items-center justify-center mb-5">
                     <svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -128,7 +118,6 @@
                 <p class="text-sm text-gray-400 leading-relaxed">Republica contenido que te guste. Puedes hacer un repost rápido o agregar tu propio comentario.</p>
             </div>
 
-            <!-- Feature 5 -->
             <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-7 hover:border-gray-700 transition-colors">
                 <div class="w-11 h-11 rounded-xl bg-pink-500/10 flex items-center justify-center mb-5">
                     <svg class="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -139,7 +128,6 @@
                 <p class="text-sm text-gray-400 leading-relaxed">Etiqueta tus publicaciones con hasta 5 hashtags para que otros usuarios descubran tu contenido.</p>
             </div>
 
-            <!-- Feature 6 -->
             <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-7 hover:border-gray-700 transition-colors">
                 <div class="w-11 h-11 rounded-xl bg-cyan-500/10 flex items-center justify-center mb-5">
                     <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -157,7 +145,7 @@
         <div class="max-w-5xl mx-auto px-6 py-24">
             <div class="text-center mb-16">
                 <h2 class="text-3xl font-bold mb-4">¿Cómo funciona?</h2>
-                <p class="text-gray-400">En pocas estás listo para empezar a conectar.</p>
+                <p class="text-gray-400">En pocos pasos estás listo para empezar a conectar.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -165,22 +153,22 @@
                     <div class="w-12 h-12 rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-5">
                         <span class="text-indigo-400 font-bold text-lg">1</span>
                     </div>
-                    <h3 class="font-semibold mb-2">Crea tu cuenta</h3>
-                    <p class="text-sm text-gray-400">Regístrate con tu correo o usa tu cuenta de Google, Facebook o Twitter.</p>
+                    <h3 class="font-semibold mb-2">Descarga la app</h3>
+                    <p class="text-sm text-gray-400">Disponible para Android. Descarga Komi desde tu tienda de aplicaciones.</p>
                 </div>
                 <div class="text-center">
                     <div class="w-12 h-12 rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-5">
                         <span class="text-indigo-400 font-bold text-lg">2</span>
                     </div>
-                    <h3 class="font-semibold mb-2">Únete a comunidades</h3>
-                    <p class="text-sm text-gray-400">Explora comunidades que te interesen o crea la tuya propia.</p>
+                    <h3 class="font-semibold mb-2">Crea tu cuenta</h3>
+                    <p class="text-sm text-gray-400">Regístrate con tu correo o usa tu cuenta de Google, Facebook o Twitter.</p>
                 </div>
                 <div class="text-center">
                     <div class="w-12 h-12 rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-5">
                         <span class="text-indigo-400 font-bold text-lg">3</span>
                     </div>
                     <h3 class="font-semibold mb-2">Comparte y conecta</h3>
-                    <p class="text-sm text-gray-400">Publica, comenta, vota y construye conversaciones que importan.</p>
+                    <p class="text-sm text-gray-400">Únete a comunidades, publica, comenta, vota y construye conversaciones que importan.</p>
                 </div>
             </div>
         </div>
@@ -192,10 +180,10 @@
             <h2 class="text-3xl font-bold mb-4">¿Listo para empezar?</h2>
             <p class="text-gray-400 mb-10 max-w-lg mx-auto">Únete a Komi y forma parte de una comunidad que crece cada día.</p>
             <a
-                href="/admin/login"
+                href="/"
                 class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-10 py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40"
             >
-                Entrar al Panel
+                Listo para empezar
             </a>
         </div>
     </section>
@@ -206,10 +194,6 @@
             <div class="flex items-center gap-2">
                 <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-xs">K</div>
                 <span class="text-sm text-gray-500">Komi &copy; {{ date('Y') }}</span>
-            </div>
-            <div class="flex items-center gap-6 text-sm text-gray-500">
-                <a href="/admin/login" class="hover:text-white transition-colors">Admin</a>
-                <a href="/api/tags/trending" class="hover:text-white transition-colors">API</a>
             </div>
         </div>
     </footer>
