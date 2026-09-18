@@ -18,10 +18,20 @@ class CommentController extends Controller
      */
     public function index(Request $request, Post $post): AnonymousResourceCollection
     {
+        $perPage = min((int) $request->input('per_page', 20), 100);
+
         $comments = $post->comments()
-            ->with(['user'])
+            ->with(['user', 'replies' => function ($query) use ($request) {
+                $query->with(['user', 'replies' => function ($q) {
+                    $q->with(['user']);
+                    $q->withCount('replies');
+                }]);
+                $query->withCount('replies');
+            }])
+            ->withCount('replies')
+            ->whereNull('parent_id')
             ->latest()
-            ->paginate(20);
+            ->paginate($perPage);
 
         return CommentResource::collection($comments);
     }

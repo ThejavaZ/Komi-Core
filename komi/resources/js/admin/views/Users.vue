@@ -20,11 +20,12 @@
             <th class="px-5 py-3 font-medium">Estado</th>
             <th class="px-5 py-3 font-medium">Admin</th>
             <th class="px-5 py-3 font-medium">Registro</th>
+            <th class="px-5 py-3 font-medium">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="6" class="px-5 py-8 text-center text-gray-400">Cargando...</td>
+            <td colspan="7" class="px-5 py-8 text-center text-gray-400">Cargando...</td>
           </tr>
           <tr
             v-for="user in users"
@@ -35,21 +36,19 @@
             <td class="px-5 py-3 text-gray-500">@{{ user.username }}</td>
             <td class="px-5 py-3 text-gray-500">{{ user.email }}</td>
             <td class="px-5 py-3">
-              <span
-                class="text-xs px-2 py-1 rounded-full"
-                :class="statusBadge(user.status)"
-              >
-                {{ user.status }}
-              </span>
+              <span class="text-xs px-2 py-1 rounded-full" :class="statusBadge(user.status)">{{ user.status }}</span>
             </td>
             <td class="px-5 py-3">
               <span v-if="user.is_global_admin" class="text-indigo-600 font-medium text-xs">Sí</span>
               <span v-else class="text-gray-400 text-xs">No</span>
             </td>
             <td class="px-5 py-3 text-gray-400 text-xs">{{ user.created_at }}</td>
+            <td class="px-5 py-3">
+              <router-link :to="{ name: 'admin.user-detail', params: { id: user.id } }" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100">Ver perfil</router-link>
+            </td>
           </tr>
           <tr v-if="!loading && users.length === 0">
-            <td colspan="6" class="px-5 py-8 text-center text-gray-400">No se encontraron usuarios</td>
+            <td colspan="7" class="px-5 py-8 text-center text-gray-400">No se encontraron usuarios</td>
           </tr>
         </tbody>
       </table>

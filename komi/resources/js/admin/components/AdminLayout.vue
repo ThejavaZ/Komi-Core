@@ -35,17 +35,20 @@
 
       <!-- Nav links -->
       <nav class="flex-1 py-4 space-y-1 px-3 overflow-y-auto">
-        <router-link
-          v-for="item in navItems"
-          :key="item.route"
-          :to="{ name: item.route }"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-          :class="isActive(item.route) ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'"
-          @click="isMobile && (sidebarOpen = false)"
-        >
-          <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
-          <span v-if="isMobile || sidebarExpanded">{{ item.label }}</span>
-        </router-link>
+        <template v-for="group in navGroups" :key="group.label">
+          <p v-if="isMobile || sidebarExpanded" class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 pt-4 pb-1">{{ group.label }}</p>
+          <router-link
+            v-for="item in group.items"
+            :key="item.route"
+            :to="{ name: item.route }"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            :class="isActive(item.route) ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'"
+            @click="isMobile && (sidebarOpen = false)"
+          >
+            <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
+            <span v-if="isMobile || sidebarExpanded">{{ item.label }}</span>
+          </router-link>
+        </template>
       </nav>
 
       <!-- Collapse toggle (solo desktop) -->
@@ -122,6 +125,12 @@ import {
   DocumentTextIcon,
   TagIcon,
   BuildingOffice2Icon,
+  FlagIcon,
+  ShieldCheckIcon,
+  InboxIcon,
+  ChartBarIcon,
+  ClockIcon,
+  ServerIcon,
   ChevronLeftIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
@@ -152,20 +161,53 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkMobile);
 });
 
-const navItems = [
-  { label: 'Dashboard', route: 'admin.dashboard', icon: HomeIcon },
-  { label: 'Usuarios', route: 'admin.users', icon: UsersIcon },
-  { label: 'Publicaciones', route: 'admin.posts', icon: DocumentTextIcon },
-  { label: 'Tags', route: 'admin.tags', icon: TagIcon },
-  { label: 'Comunidades', route: 'admin.communities', icon: BuildingOffice2Icon },
+const navGroups = [
+  {
+    label: 'Principal',
+    items: [
+      { label: 'Dashboard', route: 'admin.dashboard', icon: HomeIcon },
+    ],
+  },
+  {
+    label: 'Gestión',
+    items: [
+      { label: 'Usuarios', route: 'admin.users', icon: UsersIcon },
+      { label: 'Publicaciones', route: 'admin.posts', icon: DocumentTextIcon },
+      { label: 'Tags', route: 'admin.tags', icon: TagIcon },
+      { label: 'Comunidades', route: 'admin.communities', icon: BuildingOffice2Icon },
+    ],
+  },
+  {
+    label: 'Moderación',
+    items: [
+      { label: 'Cola de Moderación', route: 'admin.moderation', icon: ShieldCheckIcon },
+      { label: 'Reportes', route: 'admin.reports', icon: FlagIcon },
+      { label: 'Apelaciones', route: 'admin.appeals', icon: InboxIcon },
+    ],
+  },
+  {
+    label: 'Análisis',
+    items: [
+      { label: 'Analytics', route: 'admin.analytics', icon: ChartBarIcon },
+      { label: 'Historial', route: 'admin.logs', icon: ClockIcon },
+      { label: 'Sistema', route: 'admin.system', icon: ServerIcon },
+    ],
+  },
 ];
 
 const titles = {
   'admin.dashboard': 'Dashboard',
   'admin.users': 'Gestión de Usuarios',
+  'admin.user-detail': 'Detalle de Usuario',
   'admin.posts': 'Gestión de Publicaciones',
   'admin.tags': 'Gestión de Tags',
   'admin.communities': 'Comunidades',
+  'admin.reports': 'Reportes',
+  'admin.moderation': 'Cola de Moderación',
+  'admin.appeals': 'Apelaciones',
+  'admin.analytics': 'Analytics',
+  'admin.logs': 'Historial de Actividad',
+  'admin.system': 'Salud del Sistema',
 };
 
 const currentTitle = computed(() => titles[route.name] || 'Admin');

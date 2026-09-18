@@ -30,6 +30,7 @@ use Laravel\Sanctum\HasApiTokens; // 🔒 Necesario para emitir tokens en Flutte
     'is_verified',
     'is_premium',
     'is_global_admin',
+    'warnings_count',
     'provider',
     'provider_id',
 ])]
@@ -77,5 +78,15 @@ class User extends Authenticatable
     public function reactions(): HasMany
     {
         return $this->hasMany(Reaction::class);
+    }
+
+    public function appeals(): HasMany
+    {
+        return $this->hasMany(Appeal::class);
+    }
+
+    public function adminLogs(): HasMany
+    {
+        return $this->hasMany(AdminLog::class, 'admin_id');
     }
 }

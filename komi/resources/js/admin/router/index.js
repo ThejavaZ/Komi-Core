@@ -18,6 +18,11 @@ const routes = [
                 component: () => import('../views/Users.vue'),
             },
             {
+                path: 'users/:id',
+                name: 'admin.user-detail',
+                component: () => import('../views/UserDetail.vue'),
+            },
+            {
                 path: 'posts',
                 name: 'admin.posts',
                 component: () => import('../views/Posts.vue'),
@@ -31,6 +36,36 @@ const routes = [
                 path: 'communities',
                 name: 'admin.communities',
                 component: () => import('../views/Communities.vue'),
+            },
+            {
+                path: 'reports',
+                name: 'admin.reports',
+                component: () => import('../views/Reports.vue'),
+            },
+            {
+                path: 'moderation',
+                name: 'admin.moderation',
+                component: () => import('../views/ModerationQueue.vue'),
+            },
+            {
+                path: 'appeals',
+                name: 'admin.appeals',
+                component: () => import('../views/Appeals.vue'),
+            },
+            {
+                path: 'analytics',
+                name: 'admin.analytics',
+                component: () => import('../views/Analytics.vue'),
+            },
+            {
+                path: 'logs',
+                name: 'admin.logs',
+                component: () => import('../views/AdminLog.vue'),
+            },
+            {
+                path: 'system',
+                name: 'admin.system',
+                component: () => import('../views/SystemHealth.vue'),
             },
         ],
     },

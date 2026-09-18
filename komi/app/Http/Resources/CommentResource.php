@@ -19,6 +19,7 @@ class CommentResource extends JsonResource
             'content' => $this->content,
             'post_id' => $this->post_id,
             'parent_id' => $this->parent_id,
+            'replies_count' => $this->when(isset($this->replies_count), (int) $this->replies_count),
             'created_at' => $this->created_at?->toISOString(),
             'created_at_human' => $this->created_at?->diffForHumans(),
             'user' => $this->whenLoaded('user', fn () => [
@@ -28,6 +29,7 @@ class CommentResource extends JsonResource
                 'avatar_url' => $this->user->avatar,
                 'is_verified' => (bool) $this->user->is_verified,
             ]),
+            'replies' => CommentResource::collection($this->whenLoaded('replies')),
         ];
     }
 }

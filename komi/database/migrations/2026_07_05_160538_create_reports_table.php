@@ -13,7 +13,17 @@ return new class extends Migration
     {
         Schema::create('reports', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('reportable_type');
+            $table->unsignedBigInteger('reportable_id');
+            $table->string('reason');
+            $table->text('description')->nullable();
+            $table->enum('status', ['pending', 'resolved', 'dismissed'])->default('pending');
+            $table->text('admin_notes')->nullable();
             $table->timestamps();
+
+            $table->index(['reportable_type', 'reportable_id']);
+            $table->index('status');
         });
     }
 

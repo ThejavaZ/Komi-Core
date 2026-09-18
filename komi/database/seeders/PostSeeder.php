@@ -14,17 +14,10 @@ class PostSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Run the database seeds.
-     *
-     * Genera publicaciones equilibradas:
-     * - 40% texto plano / Markdown
-     * - 40% publicaciones con imagen
-     * - 20% encuestas activas con votos simulados
-     */
-    public function run(?int $count = 60): void
+    public function run(?int $count = 80): void
     {
         $users = User::query()->where('status', 'active')->get();
+        $communities = \App\Models\Community::all();
 
         if ($users->isEmpty()) {
             return;
@@ -37,30 +30,47 @@ class PostSeeder extends Seeder
 
         // Text posts (40%)
         for ($i = 0; $i < $textCount; $i++) {
+            $daysAgo = fake()->numberBetween(0, 13);
+            $createdAt = now()->subDays($daysAgo)->subHours(fake()->numberBetween(0, 23));
+
             $post = Post::factory()->text()->create([
                 'user_id' => $users->random()->id,
+                'community_id' => $communities->random()?->id,
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
             ]);
             $this->attachRandomTags($post, $allTags);
         }
 
         // Image posts (40%)
         for ($i = 0; $i < $imageCount; $i++) {
+            $daysAgo = fake()->numberBetween(0, 13);
+            $createdAt = now()->subDays($daysAgo)->subHours(fake()->numberBetween(0, 23));
+
             $post = Post::factory()->withImage()->create([
                 'user_id' => $users->random()->id,
+                'community_id' => $communities->random()?->id,
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
             ]);
             $this->attachRandomTags($post, $allTags);
         }
 
         // Poll posts (20%) with simulated votes
         for ($i = 0; $i < $pollCount; $i++) {
+            $daysAgo = fake()->numberBetween(0, 13);
+            $createdAt = now()->subDays($daysAgo)->subHours(fake()->numberBetween(0, 23));
+
             $post = Post::factory()->poll()->create([
                 'user_id' => $users->random()->id,
+                'community_id' => $communities->random()?->id,
                 'content' => fake()->sentence(8).'?',
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
             ]);
 
             $this->attachRandomTags($post, $allTags);
 
-            // Create 2-4 poll options
             $optionCount = fake()->numberBetween(2, 4);
             $options = [];
             for ($o = 0; $o < $optionCount; $o++) {
@@ -71,7 +81,6 @@ class PostSeeder extends Seeder
                 ]);
             }
 
-            // Simulate votes from random users
             $voters = $users->random(min(5, $users->count()));
             foreach ($voters as $voter) {
                 $randomOption = $options[array_rand($options)];

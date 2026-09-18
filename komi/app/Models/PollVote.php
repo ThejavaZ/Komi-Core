@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'user_id',
-    'post_id',
+    'poll_option_id',
 ])]
-class Reaction extends Model
+class PollVote extends Model
 {
     use HasFactory;
 
@@ -20,8 +20,8 @@ class Reaction extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function post(): BelongsTo
+    public function pollOption(): BelongsTo
     {
-        return $this->belongsTo(Post::class);
+        return $this->belongsTo(PollOption::class);
     }
 }

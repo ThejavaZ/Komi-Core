@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id',
     'post_id',
 ])]
-class Reaction extends Model
+class Bookmark extends Model
 {
     use HasFactory;
 

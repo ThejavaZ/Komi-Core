@@ -10,8 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'post_id',
+    'type',
 ])]
-class Reaction extends Model
+class Vote extends Model
 {
     use HasFactory;
 
