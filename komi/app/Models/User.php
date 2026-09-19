@@ -68,7 +68,14 @@ class User extends Authenticatable
 
     public function communities(): BelongsToMany
     {
-        return $this->belongsToMany(Community::class, 'community_users');
+        return $this->belongsToMany(Community::class, 'community_users')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    public function ownedCommunities(): HasMany
+    {
+        return $this->hasMany(Community::class, 'owner_id');
     }
 
     public function comments(): HasMany
@@ -100,6 +107,51 @@ class User extends Authenticatable
     {
         return $this->hasOne(AdminTwoFactor::class);
     }
+
+    // ─── Followers ────────────────────────────────────────────
+
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'followers', 'following_id', 'follower_id')
+            ->withTimestamps();
+    }
+
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'following_id')
+            ->withTimestamps();
+    }
+
+    public function isFollowing(User $user): bool
+    {
+        return $this->following()->where('following_id', $user->id)->exists();
+    }
+
+    // ─── Blocked Users ────────────────────────────────────────
+
+    public function blockedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocker_id', 'blocked_id')
+            ->withTimestamps();
+    }
+
+    public function blockedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocked_id', 'blocker_id')
+            ->withTimestamps();
+    }
+
+    public function isBlocking(User $user): bool
+    {
+        return $this->blockedUsers()->where('blocked_id', $user->id)->exists();
+    }
+
+    public function isBlockedBy(User $user): bool
+    {
+        return $this->blockedByUsers()->where('blocker_id', $user->id)->exists();
+    }
+
+    // ─── Utility Methods ──────────────────────────────────────
 
     public function isShadowbanned(): bool
     {

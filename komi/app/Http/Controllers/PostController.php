@@ -32,6 +32,14 @@ class PostController extends Controller
     {
         $data = $request->validated();
 
+        // Validar membresia si postea en una comunidad
+        if (!empty($data['community_id'])) {
+            $community = \App\Models\Community::find($data['community_id']);
+            if (!$community || !$community->members()->where('users.id', $request->user()->id)->exists()) {
+                abort(403, 'Debes ser miembro de la comunidad para publicar en ella.');
+            }
+        }
+
         $imageUrl = $data['image_url'] ?? null;
         $type = $data['type'] ?? 'text';
 

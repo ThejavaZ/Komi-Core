@@ -1,8 +1,11 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BlockController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\RepostController;
@@ -77,5 +80,30 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Actualizar el perfil del usuario autenticado
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
+
+    // ─── Perfil de usuario ───────────────────────────────────
+    Route::get('/users/search', [UserController::class, 'search']);
+    Route::get('/users/{username}', [UserController::class, 'show']);
+    Route::get('/users/{user}/posts', [UserController::class, 'userPosts']);
+
+    // ─── Seguidores ───────────────────────────────────────────
+    Route::post('/users/{user}/follow', [FollowerController::class, 'toggleFollow']);
+    Route::get('/users/{user}/followers', [FollowerController::class, 'followers']);
+    Route::get('/users/{user}/following', [FollowerController::class, 'following']);
+
+    // ─── Bloqueo de usuarios ──────────────────────────────────
+    Route::post('/users/{user}/block', [BlockController::class, 'toggleBlock']);
+    Route::get('/users/blocked', [BlockController::class, 'blockedUsers']);
+
+    // ─── Comunidades ─────────────────────────────────────────
+    Route::get('/communities', [CommunityController::class, 'index']);
+    Route::post('/communities', [CommunityController::class, 'store']);
+    Route::get('/communities/{community}', [CommunityController::class, 'show']);
+    Route::put('/communities/{community}', [CommunityController::class, 'update']);
+    Route::delete('/communities/{community}', [CommunityController::class, 'destroy']);
+    Route::post('/communities/{community}/join', [CommunityController::class, 'join']);
+    Route::post('/communities/{community}/leave', [CommunityController::class, 'leave']);
+    Route::get('/communities/{community}/members', [CommunityController::class, 'members']);
+    Route::delete('/communities/{community}/members/{user}', [CommunityController::class, 'removeMember']);
 
 });
