@@ -59,10 +59,11 @@
           </span>
         </div>
         <button
-          @click="clearFailed"
+          @click="showClearFailedDialog = true"
           :disabled="loadingClear"
-          class="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+          class="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center gap-1.5"
         >
+          <TrashIcon class="w-3.5 h-3.5"/>
           {{ loadingClear ? 'Limpiando...' : 'Limpiar Fallidos' }}
         </button>
       </div>
@@ -93,15 +94,17 @@
               <td class="px-5 py-3">
                 <div class="flex items-center gap-2">
                   <button
-                    @click="retryJob(job.id)"
-                    class="px-2.5 py-1 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
+                    @click="confirmRetryJob(job.id)"
+                    class="px-2.5 py-1 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors flex items-center gap-1"
                   >
+                    <ArrowPathIcon class="w-3.5 h-3.5"/>
                     Reintentar
                   </button>
                   <button
-                    @click="deleteJob(job.id)"
-                    class="px-2.5 py-1 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                    @click="confirmDeleteJob(job.id)"
+                    class="px-2.5 py-1 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1"
                   >
+                    <TrashIcon class="w-3.5 h-3.5"/>
                     Eliminar
                   </button>
                 </div>
@@ -114,12 +117,18 @@
         </table>
       </div>
     </div>
+
+    <ConfirmDialog v-model="showClearFailedDialog" title="Limpiar jobs fallidos" subtitle="Se eliminiran todos los jobs fallidos de la cola. Esta accion no se puede deshacer." :icon="TrashIcon" confirm-text="Limpiar todo" @confirm="clearFailed"/>
+    <ConfirmDialog v-model="showRetryJobDialog" title="Reintentar job" subtitle="El job sera reenviado a la cola para ser procesado nuevamente." :icon="ArrowPathIcon" confirm-text="Reintentar" confirm-class="text-white bg-indigo-600 hover:bg-indigo-700" @confirm="doRetryJob"/>
+    <ConfirmDialog v-model="showDeleteJobDialog" title="Eliminar job" subtitle="El job sera eliminado permanentemente de la cola." :icon="TrashIcon" confirm-text="Eliminar" @confirm="deleteJob"/>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { TrashIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const loadingClear = ref(false);
@@ -127,6 +136,13 @@ const pendingJobs = ref([]);
 const failedJobs = ref([]);
 const successMsg = ref('');
 const errorMsg = ref('');
+
+// Dialog states
+const showClearFailedDialog = ref(false);
+const showDeleteJobDialog = ref(false);
+const pendingDeleteJobId = ref(null);
+const showRetryDialog = ref(false);
+const pendingRetryJobId = ref(null);
 
 function clearMessages() {
   successMsg.value = '';
@@ -166,12 +182,16 @@ async function retryJob(id) {
   }
 }
 
-async function deleteJob(id) {
+function confirmDeleteJob(id) { pendingDeleteJobId.value = id; showDeleteJobDialog.value = true; }
+function confirmRetryJob(id) { pendingRetryJobId.value = id; showRetryDialog.value = true; }
+
+async function deleteJob() {
+  const id = pendingDeleteJobId.value;
+  showDeleteJobDialog.value = false;
+  pendingDeleteJobId.value = null;
   clearMessages();
   try {
-    const res = await api(`/admin/api/system/jobs/${id}`, {
-      method: 'DELETE',
-    });
+    const res = await api(`/admin/api/system/jobs/${id}`, { method: 'DELETE' });
     if (res.ok) {
       successMsg.value = 'Job eliminado.';
       fetchJobs();
@@ -184,13 +204,18 @@ async function deleteJob(id) {
   }
 }
 
+async function doRetryJob() {
+  const id = pendingRetryJobId.value;
+  showRetryDialog.value = false;
+  pendingRetryJobId.value = null;
+  await retryJob(id);
+}
+
 async function clearFailed() {
   clearMessages();
   loadingClear.value = true;
   try {
-    const res = await api('/admin/api/system/jobs/clear', {
-      method: 'POST',
-    });
+    const res = await api('/admin/api/system/jobs/clear', { method: 'POST' });
     if (res.ok) {
       successMsg.value = 'Todos los jobs fallidos han sido eliminados.';
       fetchJobs();

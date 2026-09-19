@@ -43,19 +43,23 @@
         </template>
         <template v-else>
           <div class="flex gap-1">
-            <button @click="startEdit(item)" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100">Editar</button>
-            <button @click="deleteTag(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Eliminar</button>
+            <button @click="startEdit(item)" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 flex items-center gap-1"><PencilSquareIcon class="w-3.5 h-3.5"/> Editar</button>
+            <button @click="confirmDeleteTag(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 flex items-center gap-1"><TrashIcon class="w-3.5 h-3.5"/> Eliminar</button>
           </div>
         </template>
       </template>
     </DataTable>
+
+    <ConfirmDialog v-model="showDeleteDialog" title="Eliminar tag" subtitle="El tag sera eliminado permanentemente." :icon="TrashIcon" confirm-text="Eliminar" @confirm="deleteTag"/>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { TrashIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const tags = ref([]);
@@ -65,6 +69,10 @@ const sortDir = ref('desc');
 const newTagName = ref('');
 const editingId = ref(null);
 const editName = ref('');
+
+// Dialog states
+const showDeleteDialog = ref(false);
+const pendingDeleteId = ref(null);
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -114,8 +122,12 @@ async function saveTag(id) {
   fetchTags(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
 
-async function deleteTag(id) {
-  if (!confirm('Eliminar este tag?')) return;
+function confirmDeleteTag(id) { pendingDeleteId.value = id; showDeleteDialog.value = true; }
+
+async function deleteTag() {
+  const id = pendingDeleteId.value;
+  showDeleteDialog.value = false;
+  pendingDeleteId.value = null;
   await api(`/admin/api/tags/${id}`, { method: 'DELETE' });
   fetchTags(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }

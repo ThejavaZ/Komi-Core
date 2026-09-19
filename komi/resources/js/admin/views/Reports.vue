@@ -30,17 +30,22 @@
     </template>
     <template #cell-actions="{ item }">
       <div class="flex gap-1">
-        <button v-if="item.status === 'pending'" @click="resolveReport(item.id, 'resolved')" class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100">Resolver</button>
-        <button v-if="item.status === 'pending'" @click="resolveReport(item.id, 'dismissed')" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200">Descartar</button>
+        <button v-if="item.status === 'pending'" @click="openResolveDialog(item.id)" class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100 flex items-center gap-1"><CheckCircleIcon class="w-3.5 h-3.5"/> Resolver</button>
+        <button v-if="item.status === 'pending'" @click="openDismissDialog(item.id)" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200 flex items-center gap-1"><XCircleIcon class="w-3.5 h-3.5"/> Descartar</button>
       </div>
     </template>
   </DataTable>
+
+  <ConfirmDialog v-model="showResolveDialog" title="Resolver reporte" subtitle="El reporte sera marcado como resuelto." :icon="CheckCircleIcon" confirm-text="Resolver" confirm-class="text-white bg-green-600 hover:bg-green-700" @confirm="confirmResolve"/>
+  <ConfirmDialog v-model="showDismissDialog" title="Descartar reporte" subtitle="El reporte sera marcado como descartado." :icon="XCircleIcon" confirm-text="Descartar" confirm-class="text-white bg-gray-600 hover:bg-gray-700" @confirm="confirmDismiss"/>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const reports = ref([]);
@@ -48,6 +53,12 @@ const pagination = ref(null);
 const sortKey = ref('created_at');
 const sortDir = ref('desc');
 const statusFilter = ref('');
+
+// Dialog states
+const showResolveDialog = ref(false);
+const pendingResolveId = ref(null);
+const showDismissDialog = ref(false);
+const pendingDismissId = ref(null);
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -75,6 +86,9 @@ async function fetchReports(page = 1, perPage = 15) {
   }
 }
 
+function openResolveDialog(id) { pendingResolveId.value = id; showResolveDialog.value = true; }
+function openDismissDialog(id) { pendingDismissId.value = id; showDismissDialog.value = true; }
+
 async function resolveReport(id, status) {
   await api(`/admin/api/reports/${id}`, {
     method: 'PUT',
@@ -82,6 +96,9 @@ async function resolveReport(id, status) {
   });
   fetchReports(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
+
+async function confirmResolve() { const id = pendingResolveId.value; showResolveDialog.value = false; pendingResolveId.value = null; await resolveReport(id, 'resolved'); }
+async function confirmDismiss() { const id = pendingDismissId.value; showDismissDialog.value = false; pendingDismissId.value = null; await resolveReport(id, 'dismissed'); }
 
 function onSort({ key, dir }) { sortKey.value = key; sortDir.value = dir; fetchReports(pagination.value?.current_page || 1, pagination.value?.per_page || 15); }
 function onPage(p) { fetchReports(p, pagination.value?.per_page || 15); }

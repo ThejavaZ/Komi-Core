@@ -60,9 +60,9 @@
         </template>
         <template v-else>
           <div class="flex gap-1">
-            <button @click="startEdit(item)" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100">Editar</button>
-            <button v-if="viewFilter === 'active'" @click="deletePost(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Eliminar</button>
-            <button v-if="viewFilter === 'trashed'" @click="restorePost(item.id)" class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100">Restaurar</button>
+            <button @click="startEdit(item)" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 flex items-center gap-1"><PencilSquareIcon class="w-3.5 h-3.5"/> Editar</button>
+            <button v-if="viewFilter === 'active'" @click="confirmDeletePost(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 flex items-center gap-1"><TrashIcon class="w-3.5 h-3.5"/> Eliminar</button>
+            <button v-if="viewFilter === 'trashed'" @click="confirmRestorePost(item.id)" class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100 flex items-center gap-1"><ArrowUturnLeftIcon class="w-3.5 h-3.5"/> Restaurar</button>
           </div>
         </template>
       </template>
@@ -97,13 +97,18 @@
         </div>
       </div>
     </div>
+
+    <ConfirmDialog v-model="showDeleteDialog" title="Eliminar publicacion" subtitle="Esta accion eliminara la publicacion permanentemente." :icon="TrashIcon" confirm-text="Eliminar" @confirm="deletePost"/>
+    <ConfirmDialog v-model="showRestoreDialog" title="Restaurar publicacion" subtitle="La publicacion volvera a estar visible." :icon="ArrowUturnLeftIcon" confirm-text="Restaurar" confirm-class="text-white bg-green-600 hover:bg-green-700" @confirm="restorePost"/>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { TrashIcon, ArrowUturnLeftIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const posts = ref([]);
@@ -115,6 +120,12 @@ const viewFilter = ref('active');
 const editingId = ref(null);
 const editContent = ref('');
 const previewingPost = ref(null);
+
+// Dialog states
+const showDeleteDialog = ref(false);
+const pendingDeleteId = ref(null);
+const showRestoreDialog = ref(false);
+const pendingRestoreId = ref(null);
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -165,13 +176,21 @@ async function savePost(id) {
   fetchPosts(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
 
-async function deletePost(id) {
-  if (!confirm('¿Eliminar esta publicación?')) return;
+function confirmDeletePost(id) { pendingDeleteId.value = id; showDeleteDialog.value = true; }
+function confirmRestorePost(id) { pendingRestoreId.value = id; showRestoreDialog.value = true; }
+
+async function deletePost() {
+  const id = pendingDeleteId.value;
+  showDeleteDialog.value = false;
+  pendingDeleteId.value = null;
   await api(`/admin/api/posts/${id}`, { method: 'DELETE' });
   fetchPosts(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
 
-async function restorePost(id) {
+async function restorePost() {
+  const id = pendingRestoreId.value;
+  showRestoreDialog.value = false;
+  pendingRestoreId.value = null;
   await api(`/admin/api/posts/${id}/restore`, { method: 'POST' });
   fetchPosts(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }

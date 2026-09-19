@@ -21,21 +21,29 @@
       <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{{ value }}</span>
     </template>
     <template #cell-actions="{ item }">
-      <button @click="deleteCommunity(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Eliminar</button>
+      <button @click="confirmDeleteCommunity(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 flex items-center gap-1"><TrashIcon class="w-3.5 h-3.5"/> Eliminar</button>
     </template>
   </DataTable>
+
+  <ConfirmDialog v-model="showDeleteDialog" title="Eliminar comunidad" subtitle="Esta accion eliminara la comunidad y todo su contenido." :icon="TrashIcon" confirm-text="Eliminar" @confirm="deleteCommunity"/>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { TrashIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const communities = ref([]);
 const pagination = ref(null);
 const sortKey = ref('created_at');
 const sortDir = ref('desc');
+
+// Dialog states
+const showDeleteDialog = ref(false);
+const pendingDeleteId = ref(null);
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -65,8 +73,12 @@ function onSort({ key, dir }) { sortKey.value = key; sortDir.value = dir; fetchC
 function onPage(p) { fetchCommunities(p, pagination.value?.per_page || 15); }
 function onPerPage(p) { fetchCommunities(1, p); }
 
-async function deleteCommunity(id) {
-  if (!confirm('¿Eliminar esta comunidad?')) return;
+function confirmDeleteCommunity(id) { pendingDeleteId.value = id; showDeleteDialog.value = true; }
+
+async function deleteCommunity() {
+  const id = pendingDeleteId.value;
+  showDeleteDialog.value = false;
+  pendingDeleteId.value = null;
   await api(`/admin/api/communities/${id}`, { method: 'DELETE' });
   fetchCommunities(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }

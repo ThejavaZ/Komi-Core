@@ -50,9 +50,10 @@
                   </span>
                   <button
                     v-else
-                    @click="revokeSession(session.id)"
-                    class="px-2.5 py-1 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                    @click="confirmRevokeSession(session.id)"
+                    class="px-2.5 py-1 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1"
                   >
+                    <XCircleIcon class="w-3.5 h-3.5"/>
                     Cerrar sesión
                   </button>
                 </div>
@@ -65,17 +66,25 @@
         </table>
       </div>
     </div>
+
+    <ConfirmDialog v-model="showRevokeDialog" title="Cerrar sesion" subtitle="Esta sesion sera cerrada y el usuario tendra que iniciar sesion nuevamente." :icon="XCircleIcon" confirm-text="Cerrar sesion" @confirm="revokeSession"/>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { XCircleIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const sessions = ref([]);
 const successMsg = ref('');
 const errorMsg = ref('');
+
+// Dialog states
+const showRevokeDialog = ref(false);
+const pendingRevokeId = ref(null);
 
 function clearMessages() {
   successMsg.value = '';
@@ -96,12 +105,15 @@ async function fetchSessions() {
   }
 }
 
-async function revokeSession(id) {
+function confirmRevokeSession(id) { pendingRevokeId.value = id; showRevokeDialog.value = true; }
+
+async function revokeSession() {
+  const id = pendingRevokeId.value;
+  showRevokeDialog.value = false;
+  pendingRevokeId.value = null;
   clearMessages();
   try {
-    const res = await api(`/admin/api/sessions/${id}`, {
-      method: 'DELETE',
-    });
+    const res = await api(`/admin/api/sessions/${id}`, { method: 'DELETE' });
     if (res.ok) {
       successMsg.value = 'Sesión cerrada correctamente.';
       fetchSessions();

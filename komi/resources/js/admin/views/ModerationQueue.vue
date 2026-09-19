@@ -89,14 +89,19 @@
       </template>
       <template #cell-actions="{ item }">
         <div v-if="item.status === 'pending'" class="flex gap-1 flex-wrap">
-          <button @click="moderate(item, 'delete_post')" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Eliminar</button>
-          <button @click="moderate(item, 'warn_user')" class="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded hover:bg-orange-100">Advertir</button>
-          <button @click="moderate(item, 'ban_user')" class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">Banear</button>
-          <button @click="moderate(item, 'dismiss')" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200">Descartar</button>
+          <button @click="openDeleteDialog(item)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 flex items-center gap-1"><TrashIcon class="w-3.5 h-3.5"/> Eliminar</button>
+          <button @click="openWarnDialog(item)" class="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded hover:bg-orange-100 flex items-center gap-1"><ExclamationTriangleIcon class="w-3.5 h-3.5"/> Advertir</button>
+          <button @click="openBanDialog(item)" class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 flex items-center gap-1"><NoSymbolIcon class="w-3.5 h-3.5"/> Banear</button>
+          <button @click="openDismissDialog(item)" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200 flex items-center gap-1"><XCircleIcon class="w-3.5 h-3.5"/> Descartar</button>
         </div>
         <span v-else class="text-xs text-gray-400">--</span>
       </template>
     </DataTable>
+
+    <ConfirmDialog v-model="showDeleteDialog" title="Eliminar publicacion" subtitle="La publicacion sera eliminada permanentemente." :icon="TrashIcon" confirm-text="Eliminar" @confirm="confirmDelete"/>
+    <ConfirmDialog v-model="showWarnDialog" title="Advertir al usuario" subtitle="Se enviara una advertencia al autor del contenido." :icon="ExclamationTriangleIcon" confirm-text="Advertir" confirm-class="text-white bg-orange-600 hover:bg-orange-700" @confirm="confirmWarn"/>
+    <ConfirmDialog v-model="showBanDialog" title="Banear al usuario" subtitle="El usuario sera baneado permanentemente de la plataforma." :icon="NoSymbolIcon" confirm-text="Banear" @confirm="confirmBan"/>
+    <ConfirmDialog v-model="showDismissDialog" title="Descartar reporte" subtitle="El reporte sera marcado como descartado." :icon="XCircleIcon" confirm-text="Descartar" confirm-class="text-white bg-gray-600 hover:bg-gray-700" @confirm="confirmDismiss"/>
   </div>
 </template>
 
@@ -104,7 +109,9 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { TrashIcon, ExclamationTriangleIcon, NoSymbolIcon, XCircleIcon } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const loading = ref(true);
@@ -112,6 +119,16 @@ const reports = ref([]);
 const pagination = ref(null);
 const sortKey = ref('created_at');
 const sortDir = ref('desc');
+
+// Dialog states
+const showDeleteDialog = ref(false);
+const pendingDeleteReport = ref(null);
+const showWarnDialog = ref(false);
+const pendingWarnReport = ref(null);
+const showBanDialog = ref(false);
+const pendingBanReport = ref(null);
+const showDismissDialog = ref(false);
+const pendingDismissReport = ref(null);
 
 const filters = reactive({ date_from: '', date_to: '', status: 'pending', type: '', user_id: '', reporter_id: '', min_reports: '' });
 
@@ -148,6 +165,11 @@ function resetFilters() {
   fetchReports(1);
 }
 
+function openDeleteDialog(report) { pendingDeleteReport.value = report; showDeleteDialog.value = true; }
+function openWarnDialog(report) { pendingWarnReport.value = report; showWarnDialog.value = true; }
+function openBanDialog(report) { pendingBanReport.value = report; showBanDialog.value = true; }
+function openDismissDialog(report) { pendingDismissReport.value = report; showDismissDialog.value = true; }
+
 async function moderate(report, action) {
   await api(`/admin/api/moderation/${report.id}/action`, {
     method: 'POST',
@@ -155,6 +177,11 @@ async function moderate(report, action) {
   });
   fetchReports(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
+
+async function confirmDelete() { const r = pendingDeleteReport.value; showDeleteDialog.value = false; pendingDeleteReport.value = null; await moderate(r, 'delete_post'); }
+async function confirmWarn() { const r = pendingWarnReport.value; showWarnDialog.value = false; pendingWarnReport.value = null; await moderate(r, 'warn_user'); }
+async function confirmBan() { const r = pendingBanReport.value; showBanDialog.value = false; pendingBanReport.value = null; await moderate(r, 'ban_user'); }
+async function confirmDismiss() { const r = pendingDismissReport.value; showDismissDialog.value = false; pendingDismissReport.value = null; await moderate(r, 'dismiss'); }
 
 function viewUser(userId) { router.push({ name: 'admin.user-detail', params: { id: userId } }); }
 function typeName(type) { return type?.split('\\').pop() || 'N/A'; }

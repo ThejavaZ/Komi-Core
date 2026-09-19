@@ -12,7 +12,7 @@
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Cache keys</p>
         <p class="text-lg font-bold text-gray-900">{{ health.cache_keys ?? '--' }}</p>
-        <button @click="clearCache" :disabled="clearingCache" class="mt-2 text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 disabled:opacity-40">{{ clearingCache ? 'Limpiando...' : 'Limpiar Cache' }}</button>
+        <button @click="showClearCacheDialog = true" :disabled="clearingCache" class="mt-2 text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 disabled:opacity-40 flex items-center gap-1"><TrashIcon class="w-3.5 h-3.5"/> {{ clearingCache ? 'Limpiando...' : 'Limpiar Cache' }}</button>
       </div>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Disco usado</p>
@@ -67,13 +67,17 @@
         {{ value || '--' }}
       </template>
     </DataTable>
+
+    <ConfirmDialog v-model="showClearCacheDialog" title="Limpiar cache" subtitle="Se eliminiran todas las claves de cache de la aplicacion." :icon="TrashIcon" confirm-text="Limpiar" @confirm="clearCache"/>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { TrashIcon } from '@heroicons/vue/24/outline';
 
 const loadingHealth = ref(true);
 const loadingErrors = ref(true);
@@ -84,6 +88,9 @@ const errorPagination = ref(null);
 const sortKey = ref('last_seen_at');
 const sortDir = ref('desc');
 let searchVal = '';
+
+// Dialog states
+const showClearCacheDialog = ref(false);
 
 const columns = [
   { key: 'message', label: 'Mensaje', sortable: false },

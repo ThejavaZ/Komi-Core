@@ -57,19 +57,23 @@
         </template>
         <template v-else>
           <div class="flex gap-1">
-            <button @click="startEdit(item)" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100">Editar</button>
-            <button @click="deleteKeyword(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Eliminar</button>
+            <button @click="startEdit(item)" class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100 flex items-center gap-1"><PencilSquareIcon class="w-3.5 h-3.5"/> Editar</button>
+            <button @click="confirmDeleteKeyword(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 flex items-center gap-1"><TrashIcon class="w-3.5 h-3.5"/> Eliminar</button>
           </div>
         </template>
       </template>
     </DataTable>
+
+    <ConfirmDialog v-model="showDeleteDialog" title="Eliminar palabra clave" subtitle="Esta palabra clave sera eliminada del filtro automatico." :icon="TrashIcon" confirm-text="Eliminar" @confirm="deleteKeyword"/>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { TrashIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const keywords = ref([]);
@@ -79,6 +83,10 @@ const sortDir = ref('desc');
 const editingId = ref(null);
 const newKeyword = reactive({ keyword: '', action: 'flag' });
 const editForm = reactive({ keyword: '', action: 'flag' });
+
+// Dialog states
+const showDeleteDialog = ref(false);
+const pendingDeleteId = ref(null);
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -125,8 +133,12 @@ async function saveEdit(id) {
   fetchKeywords(pagination.value?.current_page || 1, pagination.value?.per_page || 20);
 }
 
-async function deleteKeyword(id) {
-  if (!confirm('Eliminar esta keyword?')) return;
+function confirmDeleteKeyword(id) { pendingDeleteId.value = id; showDeleteDialog.value = true; }
+
+async function deleteKeyword() {
+  const id = pendingDeleteId.value;
+  showDeleteDialog.value = false;
+  pendingDeleteId.value = null;
   await api(`/admin/api/auto-mod/${id}`, { method: 'DELETE' });
   fetchKeywords(pagination.value?.current_page || 1, pagination.value?.per_page || 20);
 }

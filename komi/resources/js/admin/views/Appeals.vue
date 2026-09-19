@@ -42,18 +42,23 @@
     </template>
     <template #cell-actions="{ item }">
       <div v-if="item.status === 'pending'" class="flex gap-2">
-        <button @click="resolveAppeal(item.id, 'approved')" class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100">Aprobar</button>
-        <button @click="resolveAppeal(item.id, 'rejected')" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Rechazar</button>
+        <button @click="openApproveDialog(item.id)" class="text-xs bg-green-50 text-green-700 px-2 py-1 rounded hover:bg-green-100 flex items-center gap-1"><CheckCircleIcon class="w-3.5 h-3.5"/> Aprobar</button>
+        <button @click="openRejectDialog(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 flex items-center gap-1"><XCircleIcon class="w-3.5 h-3.5"/> Rechazar</button>
       </div>
       <span v-else class="text-xs text-gray-400">--</span>
     </template>
   </DataTable>
+
+  <ConfirmDialog v-model="showApproveDialog" title="Aprobar apelacion" subtitle="La apelacion sera aprobada y el usuario sera restaurado." :icon="CheckCircleIcon" confirm-text="Aprobar" confirm-class="text-white bg-green-600 hover:bg-green-700" @confirm="confirmApprove"/>
+  <ConfirmDialog v-model="showRejectDialog" title="Rechazar apelacion" subtitle="La apelacion sera rechazada permanentemente." :icon="XCircleIcon" confirm-text="Rechazar" @confirm="confirmReject"/>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const appeals = ref([]);
@@ -61,6 +66,12 @@ const pagination = ref(null);
 const sortKey = ref('created_at');
 const sortDir = ref('desc');
 const statusFilter = ref('');
+
+// Dialog states
+const showApproveDialog = ref(false);
+const pendingApproveId = ref(null);
+const showRejectDialog = ref(false);
+const pendingRejectId = ref(null);
 
 const columns = [
   { key: 'id', label: 'ID' },
@@ -88,6 +99,9 @@ async function fetchAppeals(page = 1, perPage = 15) {
   }
 }
 
+function openApproveDialog(id) { pendingApproveId.value = id; showApproveDialog.value = true; }
+function openRejectDialog(id) { pendingRejectId.value = id; showRejectDialog.value = true; }
+
 async function resolveAppeal(id, status) {
   await api(`/admin/api/appeals/${id}`, {
     method: 'PUT',
@@ -95,6 +109,9 @@ async function resolveAppeal(id, status) {
   });
   fetchAppeals(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
+
+async function confirmApprove() { const id = pendingApproveId.value; showApproveDialog.value = false; pendingApproveId.value = null; await resolveAppeal(id, 'approved'); }
+async function confirmReject() { const id = pendingRejectId.value; showRejectDialog.value = false; pendingRejectId.value = null; await resolveAppeal(id, 'rejected'); }
 
 function onSort({ key, dir }) { sortKey.value = key; sortDir.value = dir; fetchAppeals(pagination.value?.current_page || 1, pagination.value?.per_page || 15); }
 function onPage(p) { fetchAppeals(p, pagination.value?.per_page || 15); }
