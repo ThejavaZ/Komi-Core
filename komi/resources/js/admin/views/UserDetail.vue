@@ -27,11 +27,26 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button v-if="user.status === 'active'" @click="dialog = 'suspend'" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">Suspender</button>
-          <button v-if="user.status === 'active' || user.status === 'suspended'" @click="dialog = 'ban'" class="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-100">Banear</button>
-          <button v-if="user.status === 'suspended' || user.status === 'banned'" @click="dialog = 'activate'" class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-100">Activar</button>
-          <button @click="dialog = user.is_verified ? 'unverify' : 'verify'" class="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100">{{ user.is_verified ? 'Quitar verificación' : 'Verificar' }}</button>
-          <button @click="dialog = user.is_shadowbanned ? 'unshadowban' : 'shadowban'" class="text-xs px-3 py-1.5 rounded-lg" :class="user.is_shadowbanned ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'">{{ user.is_shadowbanned ? 'Quitar shadowban' : 'Shadowban' }}</button>
+          <button v-if="user.status === 'active'" @click="dialog = 'suspend'" class="inline-flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">
+            <ExclamationTriangleIcon class="w-4 h-4" />
+            Suspender
+          </button>
+          <button v-if="user.status === 'active' || user.status === 'suspended'" @click="dialog = 'ban'" class="inline-flex items-center gap-1.5 text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-100">
+            <NoSymbolIcon class="w-4 h-4" />
+            Banear
+          </button>
+          <button v-if="user.status === 'suspended' || user.status === 'banned'" @click="dialog = 'activate'" class="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-100">
+            <CheckCircleIcon class="w-4 h-4" />
+            Activar
+          </button>
+          <button @click="dialog = user.is_verified ? 'unverify' : 'verify'" class="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100">
+            <CheckBadgeIcon class="w-4 h-4" />
+            {{ user.is_verified ? 'Quitar verificación' : 'Verificar' }}
+          </button>
+          <button @click="dialog = user.is_shadowbanned ? 'unshadowban' : 'shadowban'" class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg" :class="user.is_shadowbanned ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'">
+            <EyeSlashIcon class="w-4 h-4" />
+            {{ user.is_shadowbanned ? 'Quitar shadowban' : 'Shadowban' }}
+          </button>
         </div>
       </div>
     </div>
@@ -40,12 +55,24 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
       <h3 class="font-semibold text-gray-800 mb-3">Ban temporal</h3>
       <div class="flex items-center gap-3 flex-wrap">
-        <button @click="openTempBan('24h')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">24 horas</button>
-        <button @click="openTempBan('7d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">7 dias</button>
-        <button @click="openTempBan('30d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">30 dias</button>
+        <button @click="openTempBan('24h')" class="inline-flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">
+          <ClockIcon class="w-4 h-4" />
+          24 horas
+        </button>
+        <button @click="openTempBan('7d')" class="inline-flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">
+          <ClockIcon class="w-4 h-4" />
+          7 dias
+        </button>
+        <button @click="openTempBan('30d')" class="inline-flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">
+          <ClockIcon class="w-4 h-4" />
+          30 dias
+        </button>
         <div class="flex items-center gap-2">
           <input v-model="customBanHours" type="number" min="1" placeholder="Horas" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          <button @click="openTempBan('custom')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">Aplicar</button>
+          <button @click="openTempBan('custom')" class="inline-flex items-center gap-1.5 text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">
+            <ClockIcon class="w-4 h-4" />
+            Aplicar
+          </button>
         </div>
       </div>
     </div>

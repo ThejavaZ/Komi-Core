@@ -27,7 +27,10 @@
       <span v-else class="text-gray-400 text-xs">No</span>
     </template>
     <template #cell-actions="{ item }">
-      <router-link :to="{ name: 'admin.user-detail', params: { id: item.id } }" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100">Ver perfil</router-link>
+      <router-link :to="{ name: 'admin.user-detail', params: { id: item.id } }" class="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-100">
+        <UserIcon class="w-3.5 h-3.5" />
+        Ver perfil
+      </router-link>
     </template>
   </DataTable>
 </template>
@@ -35,6 +38,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import { UserIcon } from '@heroicons/vue/24/outline';
 
 const loading = ref(true);
 const users = ref([]);
