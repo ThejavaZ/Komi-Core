@@ -51,7 +51,8 @@ class AdminModerationController extends Controller
             });
         }
 
-        $reports = $query->latest()->paginate(15);
+        $perPage = min(max((int) $request->input('per_page', 15), 1), 100);
+        $reports = $query->latest()->paginate($perPage);
 
         return response()->json($reports);
     }

@@ -10,9 +10,9 @@ use Illuminate\Http\Request;
 
 class AdminPostController extends Controller
 {
-    public function trashed(): JsonResponse
+    public function trashed(Request $request): JsonResponse
     {
-        $posts = Post::with('user')->onlyTrashed()->latest()->paginate(15);
+        $posts = Post::with('user')->onlyTrashed()->latest()->paginate(min(max((int) $request->input('per_page', 15), 1), 100));
 
         return response()->json($posts);
     }

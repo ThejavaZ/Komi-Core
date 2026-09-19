@@ -10,9 +10,9 @@ use Illuminate\Http\Request;
 
 class AdminAutoModController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $keywords = AutoModKeyword::latest()->paginate(20);
+        $keywords = AutoModKeyword::latest()->paginate(min(max((int) $request->input('per_page', 20), 1), 100));
 
         return response()->json($keywords);
     }

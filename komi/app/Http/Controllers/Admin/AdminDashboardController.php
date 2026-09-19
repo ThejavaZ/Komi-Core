@@ -21,6 +21,19 @@ use Illuminate\Support\Str;
 
 class AdminDashboardController extends Controller
 {
+    private function applySort(Request $request, $query, array $allowed, string $default = 'created_at'): void
+    {
+        $sort = $request->input('sort', $default);
+        $dir = $request->input('direction', 'desc');
+        if (!in_array($sort, $allowed)) $sort = $default;
+        $query->orderBy($sort, $dir === 'asc' ? 'asc' : 'desc');
+    }
+
+    private function perPage(Request $request, int $default = 15): int
+    {
+        return min(max((int) $request->input('per_page', $default), 1), 100);
+    }
+
     // ─── Dashboard ──────────────────────────────────────────────
     public function index(): JsonResponse
     {
@@ -143,7 +156,8 @@ class AdminDashboardController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $users = $query->latest()->paginate(15);
+        $this->applySort($request, $query, ['name', 'username', 'email', 'status', 'created_at']);
+        $users = $query->paginate($this->perPage($request));
 
         return response()->json($users);
     }
@@ -260,7 +274,7 @@ class AdminDashboardController extends Controller
             $query->where('content', 'like', "%{$search}%");
         }
 
-        $posts = $query->latest()->paginate(15);
+        $posts = $query->latest()->paginate($this->perPage($request));
 
         return response()->json($posts);
     }
@@ -296,7 +310,7 @@ class AdminDashboardController extends Controller
     {
         $tags = Tag::withCount('posts')
             ->orderByDesc('posts_count')
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return response()->json($tags);
     }
@@ -310,7 +324,7 @@ class AdminDashboardController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $reports = $query->latest()->paginate(15);
+        $reports = $query->latest()->paginate($this->perPage($request));
 
         return response()->json($reports);
     }
@@ -329,7 +343,7 @@ class AdminDashboardController extends Controller
             $query->where('reportable_type', $request->input('type'));
         }
 
-        $reports = $query->latest()->paginate(15);
+        $reports = $query->latest()->paginate($this->perPage($request));
 
         return response()->json($reports);
     }
@@ -381,7 +395,7 @@ class AdminDashboardController extends Controller
     {
         $communities = Community::withCount(['posts', 'members'])
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage($request));
 
         return response()->json($communities);
     }
@@ -404,7 +418,7 @@ class AdminDashboardController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $appeals = $query->latest()->paginate(15);
+        $appeals = $query->latest()->paginate($this->perPage($request));
 
         return response()->json($appeals);
     }
@@ -443,7 +457,7 @@ class AdminDashboardController extends Controller
             $query->where('action', $request->input('action'));
         }
 
-        $logs = $query->latest()->paginate(20);
+        $logs = $query->latest()->paginate($this->perPage($request, 20));
 
         return response()->json($logs);
     }
@@ -488,7 +502,7 @@ class AdminDashboardController extends Controller
             $query->where('message', 'like', "%{$search}%");
         }
 
-        $errors = $query->latest('last_seen_at')->paginate(20);
+        $errors = $query->latest('last_seen_at')->paginate($this->perPage($request, 20));
 
         return response()->json($errors);
     }

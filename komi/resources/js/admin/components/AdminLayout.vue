@@ -36,7 +36,7 @@
             </div>
 
             <!-- Nav links -->
-            <nav class="flex-1 py-4 space-y-1 px-3 overflow-y-auto">
+            <nav class="flex-1 py-4 space-y-1 px-3 overflow-y-auto scrollbar-hide">
                 <template v-for="group in navGroups" :key="group.label">
                     <p
                         v-if="isMobile || sidebarExpanded"
@@ -442,6 +442,14 @@ function isActive(routeName) {
 </script>
 
 <style scoped>
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
 .fade-enter-active,
 .fade-leave-active {
     transition: opacity 0.2s ease;

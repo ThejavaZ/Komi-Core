@@ -1,59 +1,58 @@
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-    <div class="px-5 py-4 border-b border-gray-100">
+  <DataTable
+    :columns="columns"
+    :items="communities"
+    :loading="loading"
+    :pagination="pagination"
+    :sort-key="sortKey"
+    :sort-dir="sortDir"
+    empty-text="No hay comunidades"
+    @sort="onSort"
+    @page="onPage"
+    @per-page="onPerPage"
+  >
+    <template #header>
       <h2 class="font-semibold text-gray-800">Comunidades</h2>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-100 text-left text-gray-500">
-            <th class="px-5 py-3 font-medium">ID</th>
-            <th class="px-5 py-3 font-medium">Nombre</th>
-            <th class="px-5 py-3 font-medium">Slug</th>
-            <th class="px-5 py-3 font-medium">Posts</th>
-            <th class="px-5 py-3 font-medium">Miembros</th>
-            <th class="px-5 py-3 font-medium">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="loading">
-            <td colspan="6" class="px-5 py-8 text-center text-gray-400">Cargando...</td>
-          </tr>
-          <tr v-for="c in communities" :key="c.id" class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-            <td class="px-5 py-3 text-gray-500">{{ c.id }}</td>
-            <td class="px-5 py-3 font-medium text-gray-800">{{ c.name }}</td>
-            <td class="px-5 py-3 text-gray-500">{{ c.slug }}</td>
-            <td class="px-5 py-3">
-              <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{{ c.posts_count }}</span>
-            </td>
-            <td class="px-5 py-3">
-              <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{{ c.members_count }}</span>
-            </td>
-            <td class="px-5 py-3">
-              <button @click="deleteCommunity(c.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Eliminar</button>
-            </td>
-          </tr>
-          <tr v-if="!loading && communities.length === 0">
-            <td colspan="6" class="px-5 py-8 text-center text-gray-400">No hay comunidades</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    </template>
+    <template #cell-posts_count="{ value }">
+      <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{{ value }}</span>
+    </template>
+    <template #cell-members_count="{ value }">
+      <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{{ value }}</span>
+    </template>
+    <template #cell-actions="{ item }">
+      <button @click="deleteCommunity(item.id)" class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Eliminar</button>
+    </template>
+  </DataTable>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import DataTable from '../components/DataTable.vue';
 
 const loading = ref(true);
 const communities = ref([]);
+const pagination = ref(null);
+const sortKey = ref('created_at');
+const sortDir = ref('desc');
 
-async function fetchCommunities() {
+const columns = [
+  { key: 'id', label: 'ID' },
+  { key: 'name', label: 'Nombre' },
+  { key: 'slug', label: 'Slug' },
+  { key: 'posts_count', label: 'Posts' },
+  { key: 'members_count', label: 'Miembros' },
+  { key: 'actions', label: 'Acciones', sortable: false, class: 'text-right' },
+];
+
+async function fetchCommunities(page = 1, perPage = 15) {
   loading.value = true;
   try {
-    const res = await fetch('/admin/api/communities', { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const params = new URLSearchParams({ page, per_page: perPage, sort: sortKey.value, direction: sortDir.value });
+    const res = await fetch(`/admin/api/communities?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
     const data = await res.json();
     communities.value = data.data || [];
+    pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
   } catch (e) {
     console.error('Error:', e);
   } finally {
@@ -61,15 +60,15 @@ async function fetchCommunities() {
   }
 }
 
+function onSort({ key, dir }) { sortKey.value = key; sortDir.value = dir; fetchCommunities(pagination.value?.current_page || 1, pagination.value?.per_page || 15); }
+function onPage(p) { fetchCommunities(p, pagination.value?.per_page || 15); }
+function onPerPage(p) { fetchCommunities(1, p); }
+
 async function deleteCommunity(id) {
   if (!confirm('¿Eliminar esta comunidad?')) return;
-  try {
-    await fetch(`/admin/api/communities/${id}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
-    fetchCommunities();
-  } catch (e) {
-    console.error('Error:', e);
-  }
+  await fetch(`/admin/api/communities/${id}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+  fetchCommunities(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
 
-onMounted(fetchCommunities);
+onMounted(() => fetchCommunities());
 </script>
