@@ -3,64 +3,55 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreReportRequest;
-use App\Http\Requests\UpdateReportRequest;
 use App\Models\Report;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 
 class ReportController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function store(StoreReportRequest $request): JsonResponse
     {
-        //
-    }
+        $validated = $request->validated();
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        $reportableType = match ($validated['type']) {
+            'user' => User::class,
+            'post' => \App\Models\Post::class,
+            'comment' => \App\Models\Comment::class,
+            default => User::class,
+        };
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreReportRequest $request)
-    {
-        //
-    }
+        $reportableId = $validated['reportable_id'];
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Report $report)
-    {
-        //
-    }
+        if ($validated['type'] === 'user') {
+            $reportable = User::findOrFail($reportableId);
+            if ($reportable->id === $request->user()->id) {
+                return response()->json(['message' => 'No puedes reportarte a ti mismo.'], 400);
+            }
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Report $report)
-    {
-        //
-    }
+        $existing = Report::where('user_id', $request->user()->id)
+            ->where('reportable_type', $reportableType)
+            ->where('reportable_id', $reportableId)
+            ->where('status', 'pending')
+            ->exists();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateReportRequest $request, Report $report)
-    {
-        //
-    }
+        if ($existing) {
+            return response()->json(['message' => 'Ya has reportado este contenido.'], 409);
+        }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Report $report)
-    {
-        //
+        $report = Report::create([
+            'user_id' => $request->user()->id,
+            'reportable_type' => $reportableType,
+            'reportable_id' => $reportableId,
+            'reason' => $validated['reason'],
+            'description' => $validated['description'] ?? null,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Reporte enviado correctamente.',
+            'report_id' => $report->id,
+        ], 201);
     }
 }

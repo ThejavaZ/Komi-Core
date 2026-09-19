@@ -8,6 +8,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RepostController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\TagController;
@@ -94,6 +95,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Bloqueo de usuarios ──────────────────────────────────
     Route::post('/users/{user}/block', [BlockController::class, 'toggleBlock']);
     Route::get('/users/blocked', [BlockController::class, 'blockedUsers']);
+
+    // ─── Reportes ─────────────────────────────────────────────
+    Route::post('/reports', [ReportController::class, 'store']);
 
     // ─── Comunidades ─────────────────────────────────────────
     Route::get('/communities', [CommunityController::class, 'index']);
