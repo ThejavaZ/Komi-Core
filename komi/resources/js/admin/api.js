@@ -71,7 +71,17 @@ export function showErrorToast(error, context = '') {
   document.head.appendChild(style);
 
   document.getElementById('komi-error-copy').addEventListener('click', () => {
-    navigator.clipboard.writeText(detail).then(() => {
+    // Fallback: textarea + execCommand (funciona en HTTP sin HTTPS)
+    const textarea = document.createElement('textarea');
+    textarea.value = detail;
+    textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (_) { /* ignore */ }
+    document.body.removeChild(textarea);
+
+    if (ok) {
       const btn = document.getElementById('komi-error-copy');
       btn.textContent = 'Copiado!';
       btn.style.background = '#22c55e';
@@ -79,7 +89,7 @@ export function showErrorToast(error, context = '') {
         toast.remove();
         style.remove();
       }, 1200);
-    });
+    }
   });
 
   document.getElementById('komi-error-close').addEventListener('click', () => {

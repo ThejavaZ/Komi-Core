@@ -151,13 +151,23 @@ function copyError(error) {
     '[Ultima vez] ' + formatDate(error.last_seen_at),
   ].filter(Boolean).join('\n\n');
 
-  navigator.clipboard.writeText(parts).then(() => {
+  // Fallback: textarea + execCommand (funciona en HTTP sin HTTPS)
+  const textarea = document.createElement('textarea');
+  textarea.value = parts;
+  textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (_) { /* ignore */ }
+  document.body.removeChild(textarea);
+
+  if (ok) {
     const toast = document.createElement('div');
     toast.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;background:#22c55e;color:white;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
     toast.textContent = 'Error copiado al portapapeles';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
-  });
+  }
 }
 
 function debouncedSearch() {
