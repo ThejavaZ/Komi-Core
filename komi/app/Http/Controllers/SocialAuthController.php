@@ -88,10 +88,13 @@ class SocialAuthController extends Controller
         // 5. Emitimos el token de acceso (mismo token name que /api/login)
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $userData = (new UserResource($user))->resolve($request);
+        $userData['email'] = $email;
+
         return response()->json([
             'status' => 'success',
             'token' => $token,
-            'user' => new UserResource($user),
+            'user' => $userData,
         ]);
     }
 
