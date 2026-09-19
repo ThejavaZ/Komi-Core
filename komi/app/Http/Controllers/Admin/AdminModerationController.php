@@ -110,6 +110,7 @@ class AdminModerationController extends Controller
         $data = $request->validate([
             'duration' => ['required', 'string', 'in:24h,7d,30d,custom'],
             'custom_hours' => ['required_if:duration,custom', 'nullable', 'integer', 'min:1', 'max:720'],
+            'reason' => ['nullable', 'string'],
         ]);
 
         $user = User::findOrFail($userId);
@@ -133,6 +134,7 @@ class AdminModerationController extends Controller
             'status' => 'banned',
             'banned_until' => $bannedUntil->toIso8601String(),
             'duration' => $data['duration'],
+            'reason' => $data['reason'] ?? null,
         ]);
 
         return response()->json([

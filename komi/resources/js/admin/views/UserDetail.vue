@@ -27,30 +27,11 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button
-            v-if="user.status === 'active'"
-            @click="updateUser({ status: 'suspended' })"
-            class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100"
-          >Suspender</button>
-          <button
-            v-if="user.status === 'active' || user.status === 'suspended'"
-            @click="updateUser({ status: 'banned' })"
-            class="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-100"
-          >Banear</button>
-          <button
-            v-if="user.status === 'suspended' || user.status === 'banned'"
-            @click="updateUser({ status: 'active', banned_until: null })"
-            class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-100"
-          >Activar</button>
-          <button
-            @click="updateUser({ is_verified: !user.is_verified })"
-            class="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100"
-          >{{ user.is_verified ? 'Quitar verificación' : 'Verificar' }}</button>
-          <button
-            @click="toggleShadowban"
-            class="text-xs px-3 py-1.5 rounded-lg"
-            :class="user.is_shadowbanned ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'"
-          >{{ user.is_shadowbanned ? 'Quitar shadowban' : 'Shadowban' }}</button>
+          <button v-if="user.status === 'active'" @click="dialog = 'suspend'" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">Suspender</button>
+          <button v-if="user.status === 'active' || user.status === 'suspended'" @click="dialog = 'ban'" class="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-100">Banear</button>
+          <button v-if="user.status === 'suspended' || user.status === 'banned'" @click="dialog = 'activate'" class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-100">Activar</button>
+          <button @click="dialog = user.is_verified ? 'unverify' : 'verify'" class="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100">{{ user.is_verified ? 'Quitar verificación' : 'Verificar' }}</button>
+          <button @click="dialog = user.is_shadowbanned ? 'unshadowban' : 'shadowban'" class="text-xs px-3 py-1.5 rounded-lg" :class="user.is_shadowbanned ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'">{{ user.is_shadowbanned ? 'Quitar shadowban' : 'Shadowban' }}</button>
         </div>
       </div>
     </div>
@@ -59,18 +40,12 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
       <h3 class="font-semibold text-gray-800 mb-3">Ban temporal</h3>
       <div class="flex items-center gap-3 flex-wrap">
-        <button @click="tempBan('24h')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">24 horas</button>
-        <button @click="tempBan('7d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">7 días</button>
-        <button @click="tempBan('30d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">30 días</button>
+        <button @click="openTempBan('24h')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">24 horas</button>
+        <button @click="openTempBan('7d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">7 dias</button>
+        <button @click="openTempBan('30d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">30 dias</button>
         <div class="flex items-center gap-2">
-          <input
-            v-model="customBanHours"
-            type="number"
-            min="1"
-            placeholder="Horas"
-            class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <button @click="tempBan('custom')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">Aplicar</button>
+          <input v-model="customBanHours" type="number" min="1" placeholder="Horas" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <button @click="openTempBan('custom')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">Aplicar</button>
         </div>
       </div>
     </div>
@@ -122,7 +97,7 @@
               <th class="px-5 py-3 font-medium">Fecha</th>
               <th class="px-5 py-3 font-medium">Reportado por</th>
               <th class="px-5 py-3 font-medium">Tipo</th>
-              <th class="px-5 py-3 font-medium">Razón</th>
+              <th class="px-5 py-3 font-medium">Razon</th>
               <th class="px-5 py-3 font-medium">Estado</th>
             </tr>
           </thead>
@@ -164,12 +139,111 @@
         <p v-else class="text-sm text-gray-400 text-center py-4">No tiene publicaciones</p>
       </div>
     </div>
+
+    <!-- ======== DIALOGS ======== -->
+
+    <!-- Suspend -->
+    <ConfirmDialog
+      v-model="dialogSuspends"
+      title="Suspender usuario"
+      :subtitle="`Se suspendera a @${user.username}. No podra publicar ni comentar.`"
+      :icon="ExclamationTriangleIcon"
+      icon-bg="bg-orange-100"
+      icon-color="text-orange-600"
+      confirm-text="Suspender"
+      confirm-class="text-white bg-orange-600 hover:bg-orange-700"
+      :show-reason="true"
+      reason-label="Motivo de la suspension"
+      reason-placeholder="Ej: Contenido ofensivo, spam..."
+      @confirm="confirmSuspend"
+    />
+
+    <!-- Ban -->
+    <ConfirmDialog
+      v-model="dialogBan"
+      title="Banear usuario"
+      :subtitle="`Se baneara a @${user.username}. No podra acceder a la plataforma.`"
+      :icon="NoSymbolIcon"
+      icon-bg="bg-red-100"
+      icon-color="text-red-600"
+      confirm-text="Banear"
+      confirm-class="text-white bg-red-600 hover:bg-red-700"
+      :show-reason="true"
+      reason-label="Motivo del baneo"
+      reason-placeholder="Ej: Acoso, spam grave, violacion de normas..."
+      @confirm="confirmBan"
+    />
+
+    <!-- Activate -->
+    <ConfirmDialog
+      v-model="dialogActivate"
+      title="Activar usuario"
+      :subtitle="`Se reactivara la cuenta de @${user.username}.`"
+      :icon="CheckCircleIcon"
+      icon-bg="bg-green-100"
+      icon-color="text-green-600"
+      confirm-text="Activar"
+      confirm-class="text-white bg-green-600 hover:bg-green-700"
+      @confirm="confirmActivate"
+    />
+
+    <!-- Verify / Unverify -->
+    <ConfirmDialog
+      v-model="dialogVerify"
+      :title="user?.is_verified ? 'Quitar verificacion' : 'Verificar usuario'"
+      :subtitle="user?.is_verified ? `Se quitara la verificacion a @${user?.username}.` : `Se verificara la cuenta de @${user?.username}.`"
+      :icon="user?.is_verified ? XCircleIcon : CheckBadgeIcon"
+      :icon-bg="user?.is_verified ? 'bg-gray-100' : 'bg-blue-100'"
+      :icon-color="user?.is_verified ? 'text-gray-600' : 'text-blue-600'"
+      :confirm-text="user?.is_verified ? 'Quitar' : 'Verificar'"
+      :confirm-class="user?.is_verified ? 'text-white bg-gray-600 hover:bg-gray-700' : 'text-white bg-blue-600 hover:bg-blue-700'"
+      @confirm="confirmVerify"
+    />
+
+    <!-- Shadowban -->
+    <ConfirmDialog
+      v-model="dialogShadowban"
+      :title="user?.is_shadowbanned ? 'Quitar shadowban' : 'Aplicar shadowban'"
+      :subtitle="user?.is_shadowbanned ? `@${user?.username} dejara de estar en shadowban.` : `@${user?.username} no podra ser visto por otros usuarios.`"
+      :icon="user?.is_shadowbanned ? CheckCircleIcon : EyeSlashIcon"
+      :icon-bg="user?.is_shadowbanned ? 'bg-purple-100' : 'bg-gray-100'"
+      :icon-color="user?.is_shadowbanned ? 'text-purple-600' : 'text-gray-600'"
+      :confirm-text="user?.is_shadowbanned ? 'Quitar' : 'Aplicar'"
+      :confirm-class="user?.is_shadowbanned ? 'text-white bg-purple-600 hover:bg-purple-700' : 'text-white bg-gray-600 hover:bg-gray-700'"
+      @confirm="confirmShadowban"
+    />
+
+    <!-- Temp ban -->
+    <ConfirmDialog
+      v-model="dialogTempBan"
+      title="Ban temporal"
+      :subtitle="`@${user?.username} sera baneado temporalmente por ${tempBanLabel}.`"
+      :icon="ClockIcon"
+      icon-bg="bg-orange-100"
+      icon-color="text-orange-600"
+      confirm-text="Aplicar"
+      confirm-class="text-white bg-orange-600 hover:bg-orange-700"
+      :show-reason="true"
+      reason-label="Motivo del baneo temporal"
+      reason-placeholder="Ej: Incumplimiento temporal de normas..."
+      @confirm="confirmTempBan"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
+import {
+  ExclamationTriangleIcon,
+  NoSymbolIcon,
+  CheckCircleIcon,
+  CheckBadgeIcon,
+  XCircleIcon,
+  EyeSlashIcon,
+  ClockIcon,
+} from '@heroicons/vue/24/outline';
 
 const route = useRoute();
 const router = useRouter();
@@ -182,6 +256,30 @@ const headers = {
   'Content-Type': 'application/json',
   'X-Requested-With': 'XMLHttpRequest',
 };
+
+// Dialog states
+const dialog = ref(null);
+const dialogSuspends = computed({ get: () => dialog.value === 'suspend', set: (v) => { if (!v) dialog.value = null; } });
+const dialogBan = computed({ get: () => dialog.value === 'ban', set: (v) => { if (!v) dialog.value = null; } });
+const dialogActivate = computed({ get: () => dialog.value === 'activate', set: (v) => { if (!v) dialog.value = null; } });
+const dialogVerify = computed({ get: () => dialog.value === 'verify' || dialog.value === 'unverify', set: (v) => { if (!v) dialog.value = null; } });
+const dialogShadowban = computed({ get: () => dialog.value === 'shadowban' || dialog.value === 'unshadowban', set: (v) => { if (!v) dialog.value = null; } });
+const dialogTempBan = computed({ get: () => dialog.value === 'tempban', set: (v) => { if (!v) dialog.value = null; } });
+
+const tempBanLabel = computed(() => {
+  if (dialog.value === 'tempban:24h') return '24 horas';
+  if (dialog.value === 'tempban:7d') return '7 dias';
+  if (dialog.value === 'tempban:30d') return '30 dias';
+  if (dialog.value === 'tempban:custom') return `${customBanHours.value} horas`;
+  return '';
+});
+
+let pendingTempBan = null;
+
+function openTempBan(duration) {
+  pendingTempBan = duration;
+  dialog.value = 'tempban';
+}
 
 async function fetchUser() {
   try {
@@ -203,7 +301,7 @@ async function updateUser(payload) {
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    user.value = data.user;
+    user.value = { ...user.value, ...data.user };
   } catch (e) {
     console.error('Error:', e);
   }
@@ -216,68 +314,54 @@ async function toggleShadowban() {
       headers,
     });
     const data = await res.json();
-    user.value = data.user;
+    user.value = { ...user.value, ...data.user };
   } catch (e) {
     console.error('Error:', e);
   }
 }
 
-async function tempBan(duration) {
+async function tempBan(duration, reason) {
   try {
     const body = { duration };
-    if (duration === 'custom') {
-      body.custom_hours = customBanHours.value;
-    }
+    if (duration === 'custom') body.custom_hours = customBanHours.value;
+    if (reason) body.reason = reason;
     const res = await fetch(`/admin/api/users/${route.params.id}/temp-ban`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    user.value = data.user;
+    user.value = { ...user.value, ...data.user };
   } catch (e) {
     console.error('Error:', e);
   }
 }
 
+function confirmSuspend(reason) { updateUser({ status: 'suspended', reason }); }
+function confirmBan(reason) { updateUser({ status: 'banned', reason }); }
+function confirmActivate() { updateUser({ status: 'active', banned_until: null }); }
+function confirmVerify() { updateUser({ is_verified: !user.value.is_verified }); }
+function confirmShadowban() { toggleShadowban(); }
+function confirmTempBan(reason) { tempBan(pendingTempBan, reason); }
+
 function statusBadge(status) {
-  const map = {
-    active: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    suspended: 'bg-orange-100 text-orange-700',
-    banned: 'bg-red-100 text-red-700',
-  };
+  const map = { active: 'bg-green-100 text-green-700', pending: 'bg-yellow-100 text-yellow-700', suspended: 'bg-orange-100 text-orange-700', banned: 'bg-red-100 text-red-700' };
   return map[status] || 'bg-gray-100 text-gray-600';
 }
 
 function reportStatusBadge(status) {
-  const map = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    reviewed: 'bg-blue-100 text-blue-700',
-    resolved: 'bg-green-100 text-green-700',
-    dismissed: 'bg-gray-100 text-gray-600',
-  };
+  const map = { pending: 'bg-yellow-100 text-yellow-700', reviewed: 'bg-blue-100 text-blue-700', resolved: 'bg-green-100 text-green-700', dismissed: 'bg-gray-100 text-gray-600' };
   return map[status] || 'bg-gray-100 text-gray-600';
 }
 
 function formatDate(date) {
   if (!date) return '';
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDateShort(date) {
   if (!date) return '';
-  return new Date(date).toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 onMounted(fetchUser);

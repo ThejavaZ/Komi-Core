@@ -219,10 +219,13 @@ class AdminDashboardController extends Controller
             'status' => ['sometimes', 'string', 'in:active,suspended,banned'],
             'is_global_admin' => ['sometimes', 'boolean'],
             'is_verified' => ['sometimes', 'boolean'],
+            'reason' => ['nullable', 'string'],
         ]);
 
+        $reason = $data['reason'] ?? null;
+        unset($data['reason']);
         $user->update($data);
-        AdminLog::log('user.update', $user, $old, $data);
+        AdminLog::log('user.update', $user, $old, array_merge($data, $reason ? ['reason' => $reason] : []));
 
         return response()->json(['user' => $user]);
     }
