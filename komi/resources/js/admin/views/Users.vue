@@ -2,6 +2,12 @@
   <div class="bg-white rounded-xl shadow-sm border border-gray-100">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
       <h2 class="font-semibold text-gray-800">Gestión de Usuarios</h2>
+      <div class="flex items-center gap-3">
+      <a
+        href="/admin/api/export/users"
+        class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded hover:bg-green-100"
+        @click.prevent="exportCSV('/admin/api/export/users')"
+      >Exportar CSV</a>
       <input
         v-model="search"
         type="text"
@@ -9,6 +15,7 @@
         class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         @input="fetchUsers"
       />
+      </div>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -88,6 +95,15 @@ function statusBadge(status) {
     banned: 'bg-red-100 text-red-700',
   };
   return map[status] || 'bg-gray-100 text-gray-600';
+}
+
+function exportCSV(url) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 onMounted(fetchUsers);

@@ -3,9 +3,14 @@
 use App\Http\Controllers\Admin\Admin2FAController;
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminAutoModController;
+use App\Http\Controllers\Admin\AdminConfigController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminExportController;
 use App\Http\Controllers\Admin\AdminModerationController;
+use App\Http\Controllers\Admin\AdminNotificationController;
 use App\Http\Controllers\Admin\AdminPostController;
+use App\Http\Controllers\Admin\AdminSearchController;
+use App\Http\Controllers\Admin\AdminSessionController;
 use App\Http\Controllers\Admin\AdminTagController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,12 +98,43 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/system/health', [AdminDashboardController::class, 'systemHealth'])->name('system.health');
         Route::get('/system/errors', [AdminDashboardController::class, 'systemErrors'])->name('system.errors');
 
+        // System - Jobs queue
+        Route::get('/system/jobs', [AdminDashboardController::class, 'jobs'])->name('system.jobs');
+        Route::post('/system/jobs/{id}/retry', [AdminDashboardController::class, 'retryJob'])->name('system.jobs.retry');
+        Route::delete('/system/jobs/{id}', [AdminDashboardController::class, 'deleteJob'])->name('system.jobs.delete');
+        Route::post('/system/jobs/clear', [AdminDashboardController::class, 'clearJobs'])->name('system.jobs.clear');
+
+        // System - Cache management
+        Route::post('/system/cache/clear', [AdminDashboardController::class, 'clearCache'])->name('system.cache.clear');
+
         // 2FA
         Route::get('/2fa/status', [Admin2FAController::class, 'status'])->name('2fa.status');
         Route::get('/2fa/setup', [Admin2FAController::class, 'setup'])->name('2fa.setup');
         Route::post('/2fa/enable', [Admin2FAController::class, 'enable'])->name('2fa.enable');
         Route::post('/2fa/disable', [Admin2FAController::class, 'disable'])->name('2fa.disable');
         Route::post('/2fa/verify', [Admin2FAController::class, 'verify'])->name('2fa.verify');
+
+        // Export
+        Route::get('/export/users', [AdminExportController::class, 'users'])->name('export.users');
+        Route::get('/export/posts', [AdminExportController::class, 'posts'])->name('export.posts');
+        Route::get('/export/reports', [AdminExportController::class, 'reports'])->name('export.reports');
+        Route::get('/export/users/{id}', [AdminExportController::class, 'singleUser'])->name('export.users.single');
+
+        // Configuration
+        Route::get('/config', [AdminConfigController::class, 'index'])->name('config.index');
+        Route::put('/config', [AdminConfigController::class, 'update'])->name('config.update');
+        Route::get('/config/rate-limits', [AdminConfigController::class, 'rateLimits'])->name('config.rate-limits');
+        Route::put('/config/rate-limits', [AdminConfigController::class, 'updateRateLimits'])->name('config.rate-limits.update');
+
+        // Sessions
+        Route::get('/sessions', [AdminSessionController::class, 'index'])->name('sessions.index');
+        Route::delete('/sessions/{id}', [AdminSessionController::class, 'destroy'])->name('sessions.destroy');
+
+        // Global search
+        Route::get('/search', [AdminSearchController::class, 'search'])->name('search');
+
+        // Notifications
+        Route::get('/notifications/unread', [AdminNotificationController::class, 'unread'])->name('notifications.unread');
     });
 
     // Catch-all: serve the Vue SPA for any admin route

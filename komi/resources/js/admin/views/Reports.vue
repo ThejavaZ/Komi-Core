@@ -2,6 +2,12 @@
   <div class="bg-white rounded-xl shadow-sm border border-gray-100">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
       <h2 class="font-semibold text-gray-800">Reportes</h2>
+      <div class="flex items-center gap-3">
+      <a
+        href="/admin/api/export/reports"
+        class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded hover:bg-green-100"
+        @click.prevent="exportCSV('/admin/api/export/reports')"
+      >Exportar CSV</a>
       <select
         v-model="statusFilter"
         class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -12,6 +18,7 @@
         <option value="resolved">Resueltos</option>
         <option value="dismissed">Descartados</option>
       </select>
+      </div>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
@@ -95,6 +102,15 @@ async function resolveReport(id, status) {
 
 function statusBadge(status) {
   return { pending: 'bg-yellow-100 text-yellow-700', resolved: 'bg-green-100 text-green-700', dismissed: 'bg-gray-100 text-gray-600' }[status] || 'bg-gray-100 text-gray-600';
+}
+
+function exportCSV(url) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = '';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 onMounted(fetchReports);

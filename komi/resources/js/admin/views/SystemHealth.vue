@@ -15,6 +15,13 @@
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Caché keys</p>
         <p class="text-lg font-bold text-gray-900">{{ health.cache_keys ?? '—' }}</p>
+        <button
+          @click="clearCache"
+          :disabled="clearingCache"
+          class="mt-2 text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100 disabled:opacity-40"
+        >
+          {{ clearingCache ? 'Limpiando...' : 'Limpiar Caché' }}
+        </button>
       </div>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <p class="text-xs text-gray-500 mb-1">Disco usado</p>
@@ -25,6 +32,17 @@
         <p class="text-xs text-gray-500 mb-1">Entorno</p>
         <p class="text-lg font-bold text-gray-900">{{ health.app_env ?? '—' }}</p>
         <p class="text-xs text-gray-400">PHP {{ health.php_version }}</p>
+      </div>
+    </div>
+
+    <!-- Jobs Pending -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-semibold text-gray-800">Jobs Pendientes</h2>
+          <p class="text-sm text-gray-500 mt-1">{{ health.jobs_pending ?? '—' }} jobs en cola</p>
+        </div>
+        <router-link to="/admin/jobs" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded hover:bg-indigo-100">Ver jobs</router-link>
       </div>
     </div>
 
@@ -87,6 +105,7 @@ import { ref, onMounted } from 'vue';
 
 const loadingHealth = ref(true);
 const loadingErrors = ref(true);
+const clearingCache = ref(false);
 const health = ref({});
 const errors = ref([]);
 const search = ref('');
@@ -131,6 +150,21 @@ function debouncedFetch() {
 
 function goPage(page) {
   if (page >= 1 && page <= totalPages.value) fetchErrors(page);
+}
+
+async function clearCache() {
+  clearingCache.value = true;
+  try {
+    await fetch('/admin/api/system/cache/clear', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    fetchHealth();
+  } catch (e) {
+    console.error('Error clearing cache:', e);
+  } finally {
+    clearingCache.value = false;
+  }
 }
 
 onMounted(() => {

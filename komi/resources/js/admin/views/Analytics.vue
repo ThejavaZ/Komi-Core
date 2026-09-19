@@ -12,6 +12,18 @@
         <option value="30">Últimos 30 días</option>
         <option value="90">Últimos 90 días</option>
       </select>
+      <select
+        v-model="communityFilter"
+        class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        @change="fetchAnalytics"
+      >
+        <option value="">Todas las comunidades</option>
+        <option v-for="c in communities" :key="c.id" :value="c.id">{{ c.name }}</option>
+      </select>
+      <label class="flex items-center gap-2">
+        <input type="checkbox" v-model="compareMode" @change="fetchAnalytics" class="rounded" />
+        <span class="text-sm">Comparar período anterior</span>
+      </label>
     </div>
 
     <div v-if="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -44,6 +56,12 @@
           <div class="h-48"><Bar :data="hourChart" :options="chartOptions" /></div>
         </div>
 
+        <!-- Engagement Rate -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <h3 class="font-semibold text-gray-800 mb-4">Engagement Rate</h3>
+          <div class="h-48"><Bar :data="engagementChart" :options="chartOptions" /></div>
+        </div>
+
         <!-- Posts by community -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h3 class="font-semibold text-gray-800 mb-4">Posts por comunidad</h3>
@@ -58,6 +76,34 @@
             <Doughnut :data="reportsReasonChart" :options="doughnutOptions" />
           </div>
           <p v-else class="text-sm text-gray-400 text-center py-8">Sin datos</p>
+        </div>
+      </div>
+
+      <!-- Comparison -->
+      <div v-if="data.comparison" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-800 mb-4">Comparación con período anterior</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="text-center">
+            <p class="text-sm text-gray-500">Publicaciones</p>
+            <p class="text-lg font-bold text-gray-900">{{ data.comparison.posts?.current ?? '—' }}</p>
+            <p class="text-xs" :class="(data.comparison.posts?.change ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+              {{ (data.comparison.posts?.change ?? 0) >= 0 ? '+' : '' }}{{ data.comparison.posts?.change ?? 0 }}%
+            </p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-gray-500">Usuarios</p>
+            <p class="text-lg font-bold text-gray-900">{{ data.comparison.users?.current ?? '—' }}</p>
+            <p class="text-xs" :class="(data.comparison.users?.change ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+              {{ (data.comparison.users?.change ?? 0) >= 0 ? '+' : '' }}{{ data.comparison.users?.change ?? 0 }}%
+            </p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-gray-500">Reacciones</p>
+            <p class="text-lg font-bold text-gray-900">{{ data.comparison.reactions?.current ?? '—' }}</p>
+            <p class="text-xs" :class="(data.comparison.reactions?.change ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'">
+              {{ (data.comparison.reactions?.change ?? 0) >= 0 ? '+' : '' }}{{ data.comparison.reactions?.change ?? 0 }}%
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -84,6 +130,9 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 
 const loading = ref(true);
 const range = ref('14');
+const communityFilter = ref('');
+const compareMode = ref(false);
+const communities = ref([]);
 const data = ref({});
 
 const chartOptions = {
@@ -168,10 +217,18 @@ const reportsReasonChart = computed(() => {
   };
 });
 
+const engagementChart = computed(() => {
+  const { labels, data: d } = buildLabelsAndData(data.value.engagement_per_day || []);
+  return { labels, datasets: [{ data: d, backgroundColor: 'rgba(139,92,246,0.7)', borderRadius: 4 }] };
+});
+
 async function fetchAnalytics() {
   loading.value = true;
   try {
-    const res = await fetch(`/admin/api/analytics?days=${range.value}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const params = new URLSearchParams({ days: range.value });
+    if (communityFilter.value) params.set('community_id', communityFilter.value);
+    if (compareMode.value) params.set('compare', '1');
+    const res = await fetch(`/admin/api/analytics?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
     data.value = await res.json();
   } catch (e) {
     console.error('Error:', e);
@@ -180,5 +237,14 @@ async function fetchAnalytics() {
   }
 }
 
-onMounted(fetchAnalytics);
+onMounted(async () => {
+  fetchAnalytics();
+  try {
+    const res = await fetch('/admin/api/communities', { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const d = await res.json();
+    communities.value = d.data || [];
+  } catch (e) {
+    console.error('Error fetching communities:', e);
+  }
+});
 </script>

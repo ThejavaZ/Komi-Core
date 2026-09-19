@@ -77,6 +77,21 @@ const routes = [
                 name: 'admin.settings',
                 component: () => import('../views/Settings.vue'),
             },
+            {
+                path: 'general-settings',
+                name: 'admin.general-settings',
+                component: () => import('../views/GeneralSettings.vue'),
+            },
+            {
+                path: 'jobs',
+                name: 'admin.jobs',
+                component: () => import('../views/JobsQueue.vue'),
+            },
+            {
+                path: 'sessions',
+                name: 'admin.sessions',
+                component: () => import('../views/Sessions.vue'),
+            },
         ],
     },
 ];

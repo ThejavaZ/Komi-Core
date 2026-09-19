@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminLog;
+use App\Models\AdminSetting;
 use App\Models\Appeal;
 use App\Models\ClientLog;
 use App\Models\Community;
@@ -13,7 +14,9 @@ use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
 class AdminDashboardController extends Controller
@@ -549,5 +552,194 @@ class AdminDashboardController extends Controller
         $errors = $query->latest('last_seen_at')->paginate(20);
 
         return response()->json($errors);
+    }
+
+    // ─── Jobs Queue ────────────────────────────────────────────
+    public function jobs(): JsonResponse
+    {
+        $jobs = DB::table('jobs')
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($job) {
+                $payload = json_decode($job->payload, true);
+                return [
+                    'id' => $job->id,
+                    'queue' => $job->queue,
+                    'display_name' => $payload['displayName'] ?? 'N/A',
+                    'job_class' => class_basename($payload['job'] ?? 'N/A'),
+                    'attempts' => $job->attempts,
+                    'reserved_at' => $job->reserved_at ? date('Y-m-d H:i:s', $job->reserved_at) : null,
+                    'created_at' => date('Y-m-d H:i:s', $job->created_at),
+                ];
+            });
+
+        $failedJobs = DB::table('failed_jobs')
+            ->orderBy('failed_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'queue' => $job->queue ?? 'N/A',
+                    'display_name' => $job->display_name ?? 'N/A',
+                    'exception' => Str::limit($job->exception, 200),
+                    'failed_at' => $job->failed_at,
+                ];
+            });
+
+        return response()->json([
+            'jobs' => $jobs,
+            'failed_jobs' => $failedJobs,
+            'pending_count' => DB::table('jobs')->count(),
+            'failed_count' => DB::table('failed_jobs')->count(),
+        ]);
+    }
+
+    public function retryJob($id): JsonResponse
+    {
+        $failedJob = DB::table('failed_jobs')->where('id', $id)->first();
+        if (!$failedJob) {
+            return response()->json(['message' => 'Job no encontrado.'], 404);
+        }
+
+        $job = (unserialize($failedJob->payload));
+        // For now, just delete the failed job record
+        DB::table('failed_jobs')->where('id', $id)->delete();
+
+        AdminLog::log('system.job.retry', null, null, ['job_id' => $id, 'display_name' => $failedJob->display_name]);
+        return response()->json(['message' => 'Job eliminado de la cola de fallidos.']);
+    }
+
+    public function deleteJob($id): JsonResponse
+    {
+        DB::table('failed_jobs')->where('id', $id)->delete();
+        AdminLog::log('system.job.delete', null, null, ['job_id' => $id]);
+        return response()->json(['message' => 'Job eliminado.']);
+    }
+
+    public function clearJobs(): JsonResponse
+    {
+        $count = DB::table('failed_jobs')->count();
+        DB::table('failed_jobs')->truncate();
+        AdminLog::log('system.jobs.clear', null, null, ['count' => $count]);
+        return response()->json(['message' => "{$count} jobs fallidos eliminados."]);
+    }
+
+    // ─── Cache Management ──────────────────────────────────────
+    public function clearCache(): JsonResponse
+    {
+        Cache::flush();
+        Artisan::call('cache:clear');
+        AdminLog::log('system.cache.clear', null, null);
+        return response()->json(['message' => 'Caché limpiada correctamente.']);
+    }
+
+    // ─── Enhanced Analytics ────────────────────────────────────
+    public function analytics(Request $request): JsonResponse
+    {
+        $days = (int) $request->input('days', 14);
+        $since = now()->subDays($days);
+        $communityId = $request->input('community_id');
+        $compare = $request->boolean('compare', false);
+
+        $postQuery = Post::where('created_at', '>=', $since);
+        $userQuery = User::where('created_at', '>=', $since);
+        $reactionQuery = \App\Models\Reaction::where('created_at', '>=', $since);
+
+        if ($communityId) {
+            $postQuery->where('community_id', $communityId);
+        }
+
+        $postsPerDay = (clone $postQuery)
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $usersPerDay = (clone $userQuery)
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $reactionsPerDay = (clone $reactionQuery)
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $postsByCommunity = Community::withCount('posts')
+            ->orderByDesc('posts_count')
+            ->limit(10)
+            ->get()
+            ->pluck('posts_count', 'name');
+
+        $reportsByReason = Report::select('reason', DB::raw('count(*) as total'))
+            ->groupBy('reason')
+            ->orderByDesc('total')
+            ->pluck('total', 'reason');
+
+        $activityByHour = (clone $postQuery)
+            ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as total'))
+            ->groupBy('hour')
+            ->orderBy('hour')
+            ->pluck('total', 'hour');
+
+        $userGrowthWeekly = (clone $userQuery)
+            ->select(
+                DB::raw('YEARWEEK(created_at, 1) as week'),
+                DB::raw('count(*) as total')
+            )
+            ->groupBy('week')
+            ->orderBy('week')
+            ->get();
+
+        // Engagement rate: (likes + comments) per day
+        $engagementPerDay = Post::where('created_at', '>=', $since)
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('SUM(likes_count + comments_count) as total_engagement'),
+                DB::raw('COUNT(*) as total_posts')
+            )
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($row) => [
+                'date' => $row->date,
+                'total' => $row->total_posts > 0 ? round($row->total_engagement / $row->total_posts, 2) : 0,
+            ]);
+
+        // Compare with previous period
+        $comparison = null;
+        if ($compare) {
+            $prevSince = $since->copy()->subDays($days);
+            $prevUntil = $since->copy()->subDay();
+
+            $prevPosts = Post::whereBetween('created_at', [$prevSince, $prevUntil])->count();
+            $currPosts = (clone $postQuery)->count();
+            $prevUsers = User::whereBetween('created_at', [$prevSince, $prevUntil])->count();
+            $currUsers = (clone $userQuery)->count();
+            $prevReactions = \App\Models\Reaction::whereBetween('created_at', [$prevSince, $prevUntil])->count();
+            $currReactions = (clone $reactionQuery)->count();
+
+            $comparison = [
+                'posts' => ['current' => $currPosts, 'previous' => $prevPosts, 'change' => $prevPosts > 0 ? round(($currPosts - $prevPosts) / $prevPosts * 100, 1) : 0],
+                'users' => ['current' => $currUsers, 'previous' => $prevUsers, 'change' => $prevUsers > 0 ? round(($currUsers - $prevUsers) / $prevUsers * 100, 1) : 0],
+                'reactions' => ['current' => $currReactions, 'previous' => $prevReactions, 'change' => $prevReactions > 0 ? round(($currReactions - $prevReactions) / $prevReactions * 100, 1) : 0],
+            ];
+        }
+
+        return response()->json([
+            'posts_per_day' => $postsPerDay,
+            'users_per_day' => $usersPerDay,
+            'reactions_per_day' => $reactionsPerDay,
+            'posts_by_community' => $postsByCommunity,
+            'reports_by_reason' => $reportsByReason,
+            'activity_by_hour' => $activityByHour,
+            'user_growth_weekly' => $userGrowthWeekly,
+            'engagement_per_day' => $engagementPerDay,
+            'comparison' => $comparison,
+        ]);
     }
 }
