@@ -71,6 +71,7 @@ class PostResource extends JsonResource
             'type' => $deleted ? 'text' : ($this->type ?? 'text'),
             'media_url' => $deleted ? null : $this->image_url,
             'image_url' => $deleted ? null : $this->image_url,
+            'link_url' => $deleted ? null : $this->link_url,
             'likes_count' => $deleted ? 0 : (int) $this->likes_count,
             'comments_count' => $deleted ? 0 : (int) ($this->comments_count ?? 0),
             'vote_score' => $deleted ? 0 : (int) ($this->vote_score ?? 0),
@@ -101,6 +102,46 @@ class PostResource extends JsonResource
                         'username' => $this->originalPost->user->username,
                         'avatar_url' => $this->originalPost->user->avatar,
                     ],
+                ];
+            }),
+            'quiz' => $this->whenLoaded('quiz', function () {
+                if ($deleted) return null;
+                return [
+                    'id' => $this->quiz->id,
+                    'title' => $this->quiz->title,
+                    'description' => $this->quiz->description,
+                    'show_results_immediately' => $this->quiz->show_results_immediately,
+                    'allow_retake' => $this->quiz->allow_retake,
+                    'time_limit_seconds' => $this->quiz->time_limit_seconds,
+                    'questions' => $this->quiz->questions->map(fn ($q) => [
+                        'id' => $q->id,
+                        'question' => $q->question,
+                        'explanation' => $q->explanation,
+                        'order' => $q->order,
+                        'answers' => $q->answers->map(fn ($a) => [
+                            'id' => $a->id,
+                            'answer_text' => $a->answer_text,
+                            'is_correct' => $a->is_correct,
+                        ]),
+                    ]),
+                ];
+            }),
+            'wiki' => $this->whenLoaded('wiki', function () {
+                if ($deleted) return null;
+                return [
+                    'id' => $this->wiki->id,
+                    'title' => $this->wiki->title,
+                    'slug' => $this->wiki->slug,
+                    'cover_image' => $this->wiki->cover_image,
+                    'version' => $this->wiki->version,
+                ];
+            }),
+            'question' => $this->whenLoaded('question', function () {
+                if ($deleted) return null;
+                return [
+                    'id' => $this->question->id,
+                    'is_solved' => $this->question->is_solved,
+                    'accepted_answer_id' => $this->question->accepted_answer_id,
                 ];
             }),
             'tags' => TagResource::collection($this->whenLoaded('tags')),

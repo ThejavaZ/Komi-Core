@@ -19,7 +19,7 @@ class PostController extends Controller
         $perPage = min((int) $request->input('per_page', 15), 50);
 
         $posts = Post::query()
-            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user'])
+            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
             ->latest()
@@ -49,6 +49,12 @@ class PostController extends Controller
 
         if (!empty($data['poll_options']) && is_array($data['poll_options'])) {
             $type = 'poll';
+        } elseif (!empty($data['quiz_questions'])) {
+            $type = 'quiz';
+        } elseif (!empty($data['wiki_title'])) {
+            $type = 'wiki';
+        } elseif (!empty($data['link_url'])) {
+            $type = 'link';
         }
 
         $post = $request->user()->posts()->create([
@@ -56,7 +62,10 @@ class PostController extends Controller
             'content' => $data['content'],
             'type' => $type,
             'image_url' => $imageUrl,
+            'link_url' => $data['link_url'] ?? null,
         ]);
+
+        // ── Structured content creation ──────────────────────────────
 
         if ($type === 'poll' && !empty($data['poll_options'])) {
             foreach ($data['poll_options'] as $optionText) {
@@ -64,6 +73,49 @@ class PostController extends Controller
                     'option_text' => $optionText,
                 ]);
             }
+        }
+
+        if ($type === 'quiz' && !empty($data['quiz_questions'])) {
+            $quiz = $post->quiz()->create([
+                'title' => $data['quiz_title'] ?? 'Quiz',
+                'description' => $data['quiz_description'] ?? null,
+            ]);
+
+            foreach ($data['quiz_questions'] as $order => $qData) {
+                $question = $quiz->questions()->create([
+                    'question' => $qData['question'],
+                    'explanation' => $qData['explanation'] ?? null,
+                    'order' => $order,
+                ]);
+
+                foreach ($qData['answers'] as $aOrder => $aAnswer) {
+                    $question->answers()->create([
+                        'answer_text' => $aAnswer['text'],
+                        'is_correct' => $aAnswer['is_correct'] ?? false,
+                        'order' => $aOrder,
+                    ]);
+                }
+            }
+        }
+
+        if ($type === 'wiki' && !empty($data['wiki_title'])) {
+            $wiki = $post->wiki()->create([
+                'title' => $data['wiki_title'],
+                'community_id' => $data['community_id'] ?? null,
+                'last_editor_id' => $request->user()->id,
+            ]);
+
+            $wiki->versions()->create([
+                'editor_id' => $request->user()->id,
+                'version' => 1,
+                'content' => $data['content'],
+            ]);
+        }
+
+        if ($type === 'question') {
+            $post->question()->create([
+                'is_solved' => $data['is_solved'] ?? false,
+            ]);
         }
 
         if (!empty($data['tags']) && is_array($data['tags'])) {
@@ -85,7 +137,7 @@ class PostController extends Controller
             $post->tags()->sync($tagIds);
         }
 
-        $post->load(['user', 'community', 'pollOptions', 'tags'])->loadCount('comments');
+        $post->load(['user', 'community', 'pollOptions', 'tags', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
         $post->is_liked_by_me = false;
 
         return (new PostResource($post))->additional([
