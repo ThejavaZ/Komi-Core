@@ -168,13 +168,14 @@ class PostController extends Controller
         }
 
         $post->edited_at = now();
+        $post->is_pinned = $request->boolean('is_pinned') ?? !$post->is_pinned;
         $post->save();
 
         $post->load(['user', 'community', 'tags', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
 
         return (new PostResource($post))->additional([
             'status' => 'success',
-            'message' => 'Publicación actualizada.',
+            'message' => $post->is_pinned ? 'Publicación fijada.' : 'Publicación despinada.',
         ]);
     }
 
@@ -223,6 +224,22 @@ class PostController extends Controller
             'status' => 'success',
             'liked' => $liked,
             'likes_count' => (int) $post->refresh()->likes_count,
+        ]);
+    }
+
+    public function togglePin(Request $request, Post $post): JsonResponse
+    {
+        if ($request->user()->id !== $post->user_id) {
+            abort(403, 'No tienes permiso para fijar esta publicación.');
+        }
+
+        $post->is_pinned = !$post->is_pinned;
+        $post->save();
+
+        return response()->json([
+            'status' => 'success',
+            'is_pinned' => $post->is_pinned,
+            'message' => $post->is_pinned ? 'Publicación fijada.' : 'Publicación despinada.',
         ]);
     }
 }

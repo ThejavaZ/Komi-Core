@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'reposts_count',
     'original_post_id',
     'edited_at',
+    'is_pinned',
 ])]
 class Post extends Model
 {
@@ -36,6 +37,7 @@ class Post extends Model
             'vote_score' => 'integer',
             'reposts_count' => 'integer',
             'edited_at' => 'datetime',
+            'is_pinned' => 'boolean',
         ];
     }
 

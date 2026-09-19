@@ -58,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dar / quitar like a una publicacion
     Route::post('/posts/{post}/like', [PostController::class, 'toggleLike']);
 
+    // Toggle pin/unpin a publicacion
+    Route::post('/posts/{post}/pin', [PostController::class, 'togglePin']);
+
     // Upvote / Downvote / Remove vote
     Route::post('/posts/{post}/vote', [VoteController::class, 'vote']);
 
