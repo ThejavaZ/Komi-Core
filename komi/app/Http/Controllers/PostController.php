@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePostRequest;
+use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
 use App\Models\Reaction;
@@ -143,6 +144,37 @@ class PostController extends Controller
         return (new PostResource($post))->additional([
             'status' => 'success',
             'message' => 'Publicación creada con éxito.',
+        ]);
+    }
+
+    public function update(UpdatePostRequest $request, Post $post): PostResource
+    {
+        if ($request->user()->id !== $post->user_id) {
+            abort(403, 'No tienes permiso para editar esta publicación.');
+        }
+
+        $data = $request->validated();
+
+        if (isset($data['content'])) {
+            $post->content = $data['content'];
+        }
+
+        if (isset($data['community_id'])) {
+            $post->community_id = $data['community_id'];
+        }
+
+        if ($request->hasFile('image')) {
+            $post->image_url = $request->file('image')->store('posts', 'public');
+        }
+
+        $post->edited_at = now();
+        $post->save();
+
+        $post->load(['user', 'community', 'tags', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
+
+        return (new PostResource($post))->additional([
+            'status' => 'success',
+            'message' => 'Publicación actualizada.',
         ]);
     }
 

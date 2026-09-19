@@ -52,6 +52,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Crear una publicacion
     Route::post('/posts', [PostController::class, 'store']);
 
+    // Editar una publicacion
+    Route::put('/posts/{post}', [PostController::class, 'update']);
+
     // Dar / quitar like a una publicacion
     Route::post('/posts/{post}/like', [PostController::class, 'toggleLike']);
 

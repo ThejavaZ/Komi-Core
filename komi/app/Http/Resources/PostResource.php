@@ -145,6 +145,7 @@ class PostResource extends JsonResource
                 ];
             }),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
+            'is_edited' => ! $deleted && ! is_null($this->edited_at),
             'created_at' => $this->created_at?->toISOString(),
             'created_at_human' => $this->created_at?->diffForHumans(),
             'community' => $this->whenLoaded('community', fn () => $this->community ? [
