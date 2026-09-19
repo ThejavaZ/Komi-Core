@@ -326,7 +326,7 @@ class AdminDashboardController extends Controller
     }
 
     // ─── Tags ───────────────────────────────────────────────────
-    public function tags(): JsonResponse
+    public function tags(Request $request): JsonResponse
     {
         $tags = Tag::withCount('posts')
             ->orderByDesc('posts_count')
