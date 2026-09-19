@@ -313,6 +313,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
+import { api } from '../api';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import {
   ExclamationTriangleIcon,
@@ -329,12 +330,6 @@ const loading = ref(true);
 const user = ref(null);
 const customBanHours = ref(24);
 const moderationHistory = ref([]);
-
-const headers = {
-  Accept: 'application/json',
-  'Content-Type': 'application/json',
-  'X-Requested-With': 'XMLHttpRequest',
-};
 
 // Dialog states
 const dialog = ref(null);
@@ -391,7 +386,7 @@ function openTempBan(duration) {
 
 async function fetchUser() {
   try {
-    const res = await fetch(`/admin/api/users/${route.params.id}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const res = await api(`/admin/api/users/${route.params.id}`);
     const data = await res.json();
     user.value = { ...data.user, stats: data.stats, communities: data.communities, reports_against: data.reports_against, recent_posts: data.recent_posts };
     moderationHistory.value = data.moderation_history || [];
@@ -405,9 +400,8 @@ async function fetchUser() {
 
 async function updateUser(payload) {
   try {
-    const res = await fetch(`/admin/api/users/${route.params.id}`, {
+    const res = await api(`/admin/api/users/${route.params.id}`, {
       method: 'PUT',
-      headers,
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -421,9 +415,8 @@ async function updateUser(payload) {
 
 async function toggleShadowban() {
   try {
-    const res = await fetch(`/admin/api/users/${route.params.id}/shadowban`, {
+    const res = await api(`/admin/api/users/${route.params.id}/shadowban`, {
       method: 'POST',
-      headers,
     });
     const data = await res.json();
     user.value = { ...user.value, ...data.user };
@@ -438,9 +431,8 @@ async function tempBan(duration, reason) {
     const body = { duration };
     if (duration === 'custom') body.custom_hours = customBanHours.value;
     if (reason) body.reason = reason;
-    const res = await fetch(`/admin/api/users/${route.params.id}/temp-ban`, {
+    const res = await api(`/admin/api/users/${route.params.id}/temp-ban`, {
       method: 'POST',
-      headers,
       body: JSON.stringify(body),
     });
     const data = await res.json();

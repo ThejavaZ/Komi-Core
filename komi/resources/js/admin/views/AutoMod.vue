@@ -69,6 +69,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import { api } from '../api';
 
 const loading = ref(true);
 const keywords = ref([]);
@@ -91,7 +92,7 @@ async function fetchKeywords(page = 1, perPage = 20) {
   loading.value = true;
   try {
     const params = new URLSearchParams({ page, per_page: perPage, sort: sortKey.value, direction: sortDir.value });
-    const res = await fetch(`/admin/api/auto-mod?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const res = await api(`/admin/api/auto-mod?${params}`);
     const data = await res.json();
     keywords.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
@@ -103,9 +104,8 @@ function onPage(p) { fetchKeywords(p, pagination.value?.per_page || 20); }
 function onPerPage(p) { fetchKeywords(1, p); }
 
 async function addKeyword() {
-  await fetch('/admin/api/auto-mod', {
+  await api('/admin/api/auto-mod', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify(newKeyword),
   });
   newKeyword.keyword = '';
@@ -117,9 +117,8 @@ function startEdit(kw) { editingId.value = kw.id; editForm.keyword = kw.keyword;
 function cancelEdit() { editingId.value = null; }
 
 async function saveEdit(id) {
-  await fetch(`/admin/api/auto-mod/${id}`, {
+  await api(`/admin/api/auto-mod/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify(editForm),
   });
   editingId.value = null;
@@ -128,7 +127,7 @@ async function saveEdit(id) {
 
 async function deleteKeyword(id) {
   if (!confirm('Eliminar esta keyword?')) return;
-  await fetch(`/admin/api/auto-mod/${id}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+  await api(`/admin/api/auto-mod/${id}`, { method: 'DELETE' });
   fetchKeywords(pagination.value?.current_page || 1, pagination.value?.per_page || 20);
 }
 

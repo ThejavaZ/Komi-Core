@@ -70,6 +70,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { api } from '../api';
 
 const loading = ref(true);
 const sessions = ref([]);
@@ -85,9 +86,7 @@ async function fetchSessions() {
   loading.value = true;
   clearMessages();
   try {
-    const res = await fetch('/admin/api/sessions', {
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    });
+    const res = await api('/admin/api/sessions');
     const data = await res.json();
     sessions.value = data.sessions || data.data || data || [];
   } catch {
@@ -100,9 +99,8 @@ async function fetchSessions() {
 async function revokeSession(id) {
   clearMessages();
   try {
-    const res = await fetch(`/admin/api/sessions/${id}`, {
+    const res = await api(`/admin/api/sessions/${id}`, {
       method: 'DELETE',
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     });
     if (res.ok) {
       successMsg.value = 'Sesión cerrada correctamente.';

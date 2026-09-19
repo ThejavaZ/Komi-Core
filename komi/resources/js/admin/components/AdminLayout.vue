@@ -191,6 +191,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { api } from "../api";
 import {
     HomeIcon,
     UsersIcon,
@@ -255,7 +256,7 @@ async function debouncedSearch() {
     if (globalSearch.value.length < 2) { searchResults.value = []; return; }
     searchDebounce = setTimeout(async () => {
         try {
-            const res = await fetch(`/admin/api/search?q=${encodeURIComponent(globalSearch.value)}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+            const res = await api(`/admin/api/search?q=${encodeURIComponent(globalSearch.value)}`);
             const data = await res.json();
             searchResults.value = data.results || [];
         } catch (e) { console.error(e); }
@@ -284,7 +285,7 @@ function changeLang() {
 
 async function fetchNotifications() {
     try {
-        const res = await fetch('/admin/api/notifications/unread', { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+        const res = await api('/admin/api/notifications/unread');
         const data = await res.json();
         unreadCount.value = data.total || 0;
         unreadData.value = data;

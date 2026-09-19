@@ -103,6 +103,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import { api } from '../api';
 
 const loading = ref(true);
 const posts = ref([]);
@@ -138,7 +139,7 @@ async function fetchPosts(page = 1, perPage = 15) {
     if (typeFilter.value) params.set('type', typeFilter.value);
     if (searchVal) params.set('search', searchVal);
     const url = viewFilter.value === 'trashed' ? `/admin/api/posts/trashed?${params}` : `/admin/api/posts?${params}`;
-    const res = await fetch(url, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const res = await api(url);
     const data = await res.json();
     posts.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
@@ -156,9 +157,8 @@ function onPerPage(p) { fetchPosts(1, p); }
 function startEdit(post) { editingId.value = post.id; editContent.value = post.content; }
 
 async function savePost(id) {
-  await fetch(`/admin/api/posts/${id}`, {
+  await api(`/admin/api/posts/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({ content: editContent.value }),
   });
   editingId.value = null;
@@ -167,12 +167,12 @@ async function savePost(id) {
 
 async function deletePost(id) {
   if (!confirm('¿Eliminar esta publicación?')) return;
-  await fetch(`/admin/api/posts/${id}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+  await api(`/admin/api/posts/${id}`, { method: 'DELETE' });
   fetchPosts(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
 
 async function restorePost(id) {
-  await fetch(`/admin/api/posts/${id}/restore`, { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+  await api(`/admin/api/posts/${id}/restore`, { method: 'POST' });
   fetchPosts(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
 

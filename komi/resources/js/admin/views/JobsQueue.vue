@@ -119,6 +119,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { api } from '../api';
 
 const loading = ref(true);
 const loadingClear = ref(false);
@@ -136,9 +137,7 @@ async function fetchJobs() {
   loading.value = true;
   clearMessages();
   try {
-    const res = await fetch('/admin/api/system/jobs', {
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    });
+    const res = await api('/admin/api/system/jobs');
     const data = await res.json();
     pendingJobs.value = data.pending || [];
     failedJobs.value = data.failed || [];
@@ -152,9 +151,8 @@ async function fetchJobs() {
 async function retryJob(id) {
   clearMessages();
   try {
-    const res = await fetch(`/admin/api/system/jobs/${id}/retry`, {
+    const res = await api(`/admin/api/system/jobs/${id}/retry`, {
       method: 'POST',
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     });
     const data = await res.json();
     if (res.ok) {
@@ -171,9 +169,8 @@ async function retryJob(id) {
 async function deleteJob(id) {
   clearMessages();
   try {
-    const res = await fetch(`/admin/api/system/jobs/${id}`, {
+    const res = await api(`/admin/api/system/jobs/${id}`, {
       method: 'DELETE',
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     });
     if (res.ok) {
       successMsg.value = 'Job eliminado.';
@@ -191,9 +188,8 @@ async function clearFailed() {
   clearMessages();
   loadingClear.value = true;
   try {
-    const res = await fetch('/admin/api/system/jobs/clear', {
+    const res = await api('/admin/api/system/jobs/clear', {
       method: 'POST',
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     });
     if (res.ok) {
       successMsg.value = 'Todos los jobs fallidos han sido eliminados.';

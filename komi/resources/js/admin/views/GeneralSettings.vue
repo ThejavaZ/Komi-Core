@@ -112,6 +112,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { api } from '../api';
 
 const loading = ref(true);
 const saving = ref(false);
@@ -135,9 +136,7 @@ function clearMessages() {
 async function fetchSettings() {
   loading.value = true;
   try {
-    const res = await fetch('/admin/api/config', {
-      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    });
+    const res = await api('/admin/api/config');
     const data = await res.json();
     Object.assign(settings, data);
   } catch {
@@ -151,13 +150,8 @@ async function saveSettings() {
   clearMessages();
   saving.value = true;
   try {
-    const res = await fetch('/admin/api/config', {
+    const res = await api('/admin/api/config', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
       body: JSON.stringify(settings),
     });
     const data = await res.json();

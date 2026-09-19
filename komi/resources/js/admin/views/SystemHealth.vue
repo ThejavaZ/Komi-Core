@@ -73,6 +73,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import { api } from '../api';
 
 const loadingHealth = ref(true);
 const loadingErrors = ref(true);
@@ -94,7 +95,7 @@ const columns = [
 async function fetchHealth() {
   loadingHealth.value = true;
   try {
-    const res = await fetch('/admin/api/system/health', { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const res = await api('/admin/api/system/health');
     health.value = await res.json();
   } catch (e) { console.error('Error:', e); } finally { loadingHealth.value = false; }
 }
@@ -104,7 +105,7 @@ async function fetchErrors(page = 1, perPage = 15) {
   try {
     const params = new URLSearchParams({ page, per_page: perPage, sort: sortKey.value, direction: sortDir.value });
     if (searchVal) params.set('search', searchVal);
-    const res = await fetch(`/admin/api/system/errors?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const res = await api(`/admin/api/system/errors?${params}`);
     const data = await res.json();
     errors.value = data.data || [];
     errorPagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
@@ -119,7 +120,7 @@ function onPerPage(p) { fetchErrors(1, p); }
 async function clearCache() {
   clearingCache.value = true;
   try {
-    await fetch('/admin/api/system/cache/clear', { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    await api('/admin/api/system/cache/clear', { method: 'POST' });
     fetchHealth();
   } catch (e) { console.error('Error:', e); } finally { clearingCache.value = false; }
 }

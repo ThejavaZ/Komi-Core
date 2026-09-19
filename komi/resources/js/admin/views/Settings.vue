@@ -109,6 +109,7 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { api } from "../api";
 
 const twoFaEnabled = ref(false);
 const setupData = ref(null);
@@ -125,7 +126,7 @@ function clearMessages() {
 
 async function fetchStatus() {
     try {
-        const res = await fetch("/admin/api/2fa/status");
+        const res = await api("/admin/api/2fa/status");
         const data = await res.json();
         twoFaEnabled.value = data.enabled;
     } catch {
@@ -137,9 +138,7 @@ async function initSetup() {
     clearMessages();
     loading.value = true;
     try {
-        const res = await fetch("/admin/api/2fa/setup", {
-            headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
-        });
+        const res = await api("/admin/api/2fa/setup");
         const data = await res.json();
         if (res.ok) {
             setupData.value = {
@@ -160,9 +159,8 @@ async function enable2FA() {
     clearMessages();
     loading.value = true;
     try {
-        const res = await fetch("/admin/api/2fa/enable", {
+        const res = await api("/admin/api/2fa/enable", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
             body: JSON.stringify({ code: enableCode.value }),
         });
         const data = await res.json();
@@ -185,9 +183,8 @@ async function disable2FA() {
     clearMessages();
     loading.value = true;
     try {
-        const res = await fetch("/admin/api/2fa/disable", {
+        const res = await api("/admin/api/2fa/disable", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
             body: JSON.stringify({ code: disableCode.value }),
         });
         const data = await res.json();

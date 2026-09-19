@@ -55,6 +55,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import { api } from '../api';
 
 const loading = ref(true);
 const tags = ref([]);
@@ -77,7 +78,7 @@ async function fetchTags(page = 1, perPage = 15) {
   loading.value = true;
   try {
     const params = new URLSearchParams({ page, per_page: perPage, sort: sortKey.value, direction: sortDir.value });
-    const res = await fetch(`/admin/api/tags?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const res = await api(`/admin/api/tags?${params}`);
     const data = await res.json();
     tags.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
@@ -94,9 +95,8 @@ function onPerPage(p) { fetchTags(1, p); }
 
 async function addTag() {
   if (!newTagName.value) return;
-  await fetch('/admin/api/tags', {
+  await api('/admin/api/tags', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({ name: newTagName.value }),
   });
   newTagName.value = '';
@@ -106,9 +106,8 @@ async function addTag() {
 function startEdit(tag) { editingId.value = tag.id; editName.value = tag.name; }
 
 async function saveTag(id) {
-  await fetch(`/admin/api/tags/${id}`, {
+  await api(`/admin/api/tags/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({ name: editName.value }),
   });
   editingId.value = null;
@@ -117,7 +116,7 @@ async function saveTag(id) {
 
 async function deleteTag(id) {
   if (!confirm('Eliminar este tag?')) return;
-  await fetch(`/admin/api/tags/${id}`, { method: 'DELETE', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+  await api(`/admin/api/tags/${id}`, { method: 'DELETE' });
   fetchTags(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
 }
 

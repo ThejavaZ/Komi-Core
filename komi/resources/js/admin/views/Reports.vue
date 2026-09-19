@@ -40,6 +40,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
+import { api } from '../api';
 
 const loading = ref(true);
 const reports = ref([]);
@@ -63,7 +64,7 @@ async function fetchReports(page = 1, perPage = 15) {
   try {
     const params = new URLSearchParams({ page, per_page: perPage, sort: sortKey.value, direction: sortDir.value });
     if (statusFilter.value) params.set('status', statusFilter.value);
-    const res = await fetch(`/admin/api/reports?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+    const res = await api(`/admin/api/reports?${params}`);
     const data = await res.json();
     reports.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
@@ -75,9 +76,8 @@ async function fetchReports(page = 1, perPage = 15) {
 }
 
 async function resolveReport(id, status) {
-  await fetch(`/admin/api/reports/${id}`, {
+  await api(`/admin/api/reports/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({ status }),
   });
   fetchReports(pagination.value?.current_page || 1, pagination.value?.per_page || 15);
