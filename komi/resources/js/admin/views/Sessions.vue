@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '../api.js';
 import { ref, onMounted } from 'vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
@@ -98,7 +99,8 @@ async function fetchSessions() {
     const res = await api('/admin/api/sessions');
     const data = await res.json();
     sessions.value = data.sessions || data.data || data || [];
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'Sessions');
     errorMsg.value = 'Error al cargar las sesiones.';
   } finally {
     loading.value = false;
@@ -121,7 +123,8 @@ async function revokeSession() {
       const data = await res.json();
       errorMsg.value = data.message || 'Error al cerrar la sesión.';
     }
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'Sessions');
     errorMsg.value = 'Error al cerrar la sesión.';
   }
 }

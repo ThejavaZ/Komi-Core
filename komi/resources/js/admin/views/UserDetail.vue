@@ -311,6 +311,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api';
@@ -392,7 +393,7 @@ async function fetchUser() {
     moderationHistory.value = data.moderation_history || [];
     updateBanRemaining();
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'UserDetail');
   } finally {
     loading.value = false;
   }
@@ -409,7 +410,7 @@ async function updateUser(payload) {
     updateBanRemaining();
     await fetchUser();
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'UserDetail');
   }
 }
 
@@ -422,7 +423,7 @@ async function toggleShadowban() {
     user.value = { ...user.value, ...data.user };
     await fetchUser();
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'UserDetail');
   }
 }
 
@@ -440,7 +441,7 @@ async function tempBan(duration, reason) {
     updateBanRemaining();
     await fetchUser();
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'UserDetail');
   }
 }
 

@@ -106,6 +106,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import DataTable from '../components/DataTable.vue';
@@ -154,7 +155,7 @@ async function fetchReports(page = 1, perPage = 15) {
     reports.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'ModerationQueue');
   } finally {
     loading.value = false;
   }

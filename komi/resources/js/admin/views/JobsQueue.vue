@@ -125,6 +125,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '../api.js';
 import { ref, onMounted } from 'vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';
@@ -157,7 +158,8 @@ async function fetchJobs() {
     const data = await res.json();
     pendingJobs.value = data.pending || [];
     failedJobs.value = data.failed || [];
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'JobsQueue');
     errorMsg.value = 'Error al cargar la cola de jobs.';
   } finally {
     loading.value = false;
@@ -177,7 +179,8 @@ async function retryJob(id) {
     } else {
       errorMsg.value = data.message || 'Error al reintentar el job.';
     }
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'JobsQueue');
     errorMsg.value = 'Error al reintentar el job.';
   }
 }
@@ -199,7 +202,8 @@ async function deleteJob() {
       const data = await res.json();
       errorMsg.value = data.message || 'Error al eliminar el job.';
     }
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'JobsQueue');
     errorMsg.value = 'Error al eliminar el job.';
   }
 }
@@ -223,7 +227,8 @@ async function clearFailed() {
       const data = await res.json();
       errorMsg.value = data.message || 'Error al limpiar jobs fallidos.';
     }
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'JobsQueue');
     errorMsg.value = 'Error al limpiar jobs fallidos.';
   } finally {
     loadingClear.value = false;

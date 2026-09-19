@@ -29,6 +29,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, reactive, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
@@ -63,7 +64,7 @@ async function fetchCommunities(page = 1, perPage = 15) {
     communities.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'Communities');
   } finally {
     loading.value = false;
   }

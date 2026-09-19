@@ -69,6 +69,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, reactive, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
@@ -104,7 +105,7 @@ async function fetchKeywords(page = 1, perPage = 20) {
     const data = await res.json();
     keywords.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
-  } catch (e) { console.error('Error:', e); } finally { loading.value = false; }
+  } catch (e) { showErrorToast(e, 'AutoMod'); } finally { loading.value = false; }
 }
 
 function onSort({ key, dir }) { sortKey.value = key; sortDir.value = dir; fetchKeywords(pagination.value?.current_page || 1, pagination.value?.per_page || 20); }

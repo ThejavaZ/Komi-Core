@@ -108,6 +108,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '../api.js';
 import { ref, onMounted } from "vue";
 import { api } from "../api";
 
@@ -129,7 +130,8 @@ async function fetchStatus() {
         const res = await api("/admin/api/2fa/status");
         const data = await res.json();
         twoFaEnabled.value = data.enabled;
-    } catch {
+    } catch (e) {
+    showErrorToast(e, 'Settings');
         // ignore
     }
 }
@@ -148,7 +150,8 @@ async function initSetup() {
         } else {
             errorMsg.value = data.message || "Error al configurar 2FA.";
         }
-    } catch {
+    } catch (e) {
+    showErrorToast(e, 'Settings');
         errorMsg.value = "Error al obtener la configuración de 2FA.";
     } finally {
         loading.value = false;
@@ -172,7 +175,8 @@ async function enable2FA() {
         } else {
             errorMsg.value = data.message || "Código inválido.";
         }
-    } catch {
+    } catch (e) {
+    showErrorToast(e, 'Settings');
         errorMsg.value = "Error al habilitar 2FA.";
     } finally {
         loading.value = false;
@@ -195,7 +199,8 @@ async function disable2FA() {
         } else {
             errorMsg.value = data.message || "Código inválido.";
         }
-    } catch {
+    } catch (e) {
+    showErrorToast(e, 'Settings');
         errorMsg.value = "Error al deshabilitar 2FA.";
     } finally {
         loading.value = false;

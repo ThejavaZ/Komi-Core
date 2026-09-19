@@ -124,6 +124,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, computed, onMounted } from 'vue';
 import { Line, Doughnut, Bar } from 'vue-chartjs';
 import {
@@ -267,7 +268,7 @@ onMounted(async () => {
     postsByType.value = data.posts_by_type;
     usersByStatus.value = data.users_by_status;
   } catch (e) {
-    console.error('Error loading dashboard:', e);
+    showErrorToast(e, 'Dashboard');
   } finally {
     loading.value = false;
   }

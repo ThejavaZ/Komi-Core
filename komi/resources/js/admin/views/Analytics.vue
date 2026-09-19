@@ -111,6 +111,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, computed, onMounted } from 'vue';
 import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
@@ -231,7 +232,7 @@ async function fetchAnalytics() {
     const res = await fetch(`/admin/api/analytics?${params}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
     data.value = await res.json();
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'Analytics');
   } finally {
     loading.value = false;
   }
@@ -244,7 +245,7 @@ onMounted(async () => {
     const d = await res.json();
     communities.value = d.data || [];
   } catch (e) {
-    console.error('Error fetching communities:', e);
+    showErrorToast(e, 'Analytics');
   }
 });
 </script>

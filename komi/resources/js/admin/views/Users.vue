@@ -36,6 +36,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
 import { UserIcon } from '@heroicons/vue/24/outline';
@@ -74,7 +75,7 @@ async function fetchUsers(page = 1, perPage = 15) {
     users.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
   } catch (e) {
-    console.error('Error fetching users:', e);
+    showErrorToast(e, 'Users');
   } finally {
     loading.value = false;
   }

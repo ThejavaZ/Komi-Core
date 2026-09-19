@@ -111,6 +111,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '../api.js';
 import { ref, reactive, onMounted } from 'vue';
 import { api } from '../api';
 
@@ -139,7 +140,8 @@ async function fetchSettings() {
     const res = await api('/admin/api/config');
     const data = await res.json();
     Object.assign(settings, data);
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'GeneralSettings');
     errorMsg.value = 'Error al cargar la configuración.';
   } finally {
     loading.value = false;
@@ -160,7 +162,8 @@ async function saveSettings() {
     } else {
       errorMsg.value = data.message || 'Error al guardar la configuración.';
     }
-  } catch {
+  } catch (e) {
+    showErrorToast(e, 'GeneralSettings');
     errorMsg.value = 'Error al guardar la configuración.';
   } finally {
     saving.value = false;

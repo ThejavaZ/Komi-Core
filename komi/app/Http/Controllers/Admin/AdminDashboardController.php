@@ -519,7 +519,11 @@ class AdminDashboardController extends Controller
 
         if ($request->has('search')) {
             $search = $request->input('search');
-            $query->where('message', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('message', 'like', "%{$search}%")
+                    ->orWhere('stack_trace', 'like', "%{$search}%")
+                    ->orWhere('error_hash', 'like', "%{$search}%");
+            });
         }
 
         $errors = $query->latest('last_seen_at')->paginate($this->perPage($request, 20));

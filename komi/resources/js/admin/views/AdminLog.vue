@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+import { showErrorToast } from '@/../api.js';
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
 
@@ -75,7 +76,7 @@ async function fetchLogs(page = 1, perPage = 15) {
     logs.value = data.data || [];
     pagination.value = { current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total };
   } catch (e) {
-    console.error('Error:', e);
+    showErrorToast(e, 'AdminLog');
   } finally {
     loading.value = false;
   }
