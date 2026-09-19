@@ -17,7 +17,7 @@ class AdminSessionController extends Controller
             ->latest('last_activity')
             ->get()
             ->map(function ($session) {
-                $payload = unserialize($session->payload);
+                $payload = json_decode(base64_decode($session->payload), true);
                 return [
                     'id' => $session->id,
                     'ip_address' => $session->ip_address,

@@ -411,7 +411,7 @@ class AdminDashboardController extends Controller
     }
 
     // ─── Communities ────────────────────────────────────────────
-    public function communities(): JsonResponse
+    public function communities(Request $request): JsonResponse
     {
         $communities = Community::withCount(['posts', 'members'])
             ->latest()
@@ -497,8 +497,8 @@ class AdminDashboardController extends Controller
             'keys' => DB::table('cache')->count(),
         ];
 
-        $diskFree = @disk_free_bytes(storage_path()) ?: 0;
-        $diskTotal = @disk_total_bytes(storage_path()) ?: 1;
+        $diskFree = @disk_free_space(storage_path()) ?: 0;
+        $diskTotal = @disk_total_space(storage_path()) ?: 1;
 
         return response()->json([
             'database' => $dbOk ? 'ok' : 'error',
