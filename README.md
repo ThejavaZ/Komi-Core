@@ -23,6 +23,19 @@ El proyecto tiene dos interfaces:
 - **API REST JSON** consumida por el cliente Flutter (`komi`), con autenticación por tokens Sanctum
 - **Admin Panel SPA** construido con Vue 3, accesible en `/admin`, con autenticación por sesión y 2FA
 
+### Funcionalidades principales
+
+- **Usuarios**: registro con OTP, login social (Google/Facebook/Twitter), perfiles públicos, búsqueda
+- **Seguidores**: seguir/dejar de seguidores, lista de seguidores/seguidos
+- **Bloqueo**: bloquear/desbloquear usuarios (auto-unfollow al bloquear)
+- **Publicaciones**: texto, imágenes, encuestas, reposts, soft delete
+- **Votaciones**: likes, upvote/downvote estilo Reddit, bookmarks
+- **Comentarios**: anidados hasta 3 niveles
+- **Comunidades**: crear, unirse, salir, roles (owner/admin/moderator/member), feed por comunidad
+- **Tags**: hashtags trending, búsqueda por tag
+- **Moderación**: reportes, apelaciones, shadowban, ban temporal/permanente, auto-moderación
+- **Admin Panel**: dashboard con analytics, gestión completa de usuarios y contenido, export CSV, 2FA
+
 ## Stack Tecnológico
 
 | Capa | Tecnología |
@@ -125,6 +138,43 @@ La API está versionada bajo el prefijo `/api`. Autenticación por token **Beare
 | `GET` | `/api/me/bookmarks` | Lista de favoritos del usuario |
 | `PUT` | `/api/user/profile` | Actualizar perfil |
 
+### Perfil de usuario y búsqueda
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/users/search?q=...` | Buscar usuarios por nombre/username |
+| `GET` | `/api/users/{username}` | Perfil público de usuario |
+| `GET` | `/api/users/{user}/posts` | Posts de un usuario |
+
+### Seguidores
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/api/users/{user}/follow` | Toggle seguir/dejar de seguir |
+| `GET` | `/api/users/{user}/followers` | Lista de seguidores |
+| `GET` | `/api/users/{user}/following` | Lista de seguidos |
+
+### Bloqueo de usuarios
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/api/users/{user}/block` | Toggle bloquear/desbloquear |
+| `GET` | `/api/users/blocked` | Lista de usuarios bloqueados |
+
+### Comunidades
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/communities` | Listar comunidades públicas |
+| `POST` | `/api/communities` | Crear comunidad |
+| `GET` | `/api/communities/{community}` | Ver comunidad + miembros |
+| `PUT` | `/api/communities/{community}` | Editar comunidad (owner/admin) |
+| `DELETE` | `/api/communities/{community}` | Eliminar comunidad (owner) |
+| `POST` | `/api/communities/{community}/join` | Unirse a comunidad |
+| `POST` | `/api/communities/{community}/leave` | Salir de comunidad |
+| `GET` | `/api/communities/{community}/members` | Lista de miembros |
+| `DELETE` | `/api/communities/{community}/members/{user}` | Expulsar miembro (admin/owner) |
+
 ### Admin API (sesión + middleware `admin`)
 
 Todas las rutas admin están bajo `/admin/api/` y requieren sesión de admin autenticado con protección CSRF.
@@ -222,15 +272,18 @@ El job `UnbanExpiredUsersJob` se ejecuta cada minuto y restaura automáticamente
 
 | Modelo | Descripción | Relaciones clave |
 |--------|-------------|------------------|
-| **User** | Usuarios de la plataforma | posts, comments, reactions, appeals, reports, communities |
+| **User** | Usuarios de la plataforma | posts, comments, reactions, appeals, reports, communities, followers, following, blockedUsers |
 | **Post** | Publicaciones (texto/imagen/encuesta/repost) | user, community, tags, comments, reactions, pollOptions, votes, bookmarks |
 | **Comment** | Comentarios anidados (hasta 3 niveles) | user, post, parent, replies |
-| **Community** | Comunidades | posts, members (users) |
+| **Community** | Comunidades con roles | owner, posts, members (con pivot role) |
+| **CommunityUser** | Membros de comunidades | user, community (role: owner/admin/moderator/member) |
 | **Tag** | Hashtags | posts (pivot: post_tags) |
 | **Reaction** | Likes en publicaciones | user, post |
 | **Vote** | Votos estilo Reddit (upvote/downvote) | user, post |
 | **PollOption / PollVote** | Opciones y votos de encuestas | post / user, pollOption |
 | **Bookmark** | Favoritos | user, post |
+| **Follower** | Relaciones de seguimiento | follower (user), following (user) |
+| **UserBlock** | Bloqueo de usuarios | blocker (user), blocked (user) |
 | **Report** | Reportes de contenido | reporter, reportable (polymorphic) |
 | **Appeal** | Apelaciones de moderación | user, reviewer |
 | **AdminLog** | Audit trail de administración | admin |
@@ -262,7 +315,10 @@ Komi-Core/
 │   │   │   │   ├── BookmarkController.php       # Favoritos
 │   │   │   │   ├── RepostController.php         # Reposts
 │   │   │   │   ├── TagController.php            # Tags trending
-│   │   │   │   ├── UserController.php           # Perfil de usuario
+│   │   │   │   ├── UserController.php           # Perfil de usuario, búsqueda
+│   │   │   │   ├── FollowerController.php       # Seguidores (toggle, followers, following)
+│   │   │   │   ├── CommunityController.php      # CRUD comunidades + join/leave/members
+│   │   │   │   ├── BlockController.php          # Bloqueo de usuarios
 │   │   │   │   ├── TelemetryController.php      # Logs del cliente
 │   │   │   │   └── Admin/
 │   │   │   │       ├── AdminAuthController.php       # Login admin + 2FA
@@ -279,17 +335,17 @@ Komi-Core/
 │   │   │   │       └── AdminNotificationController.php # Notificaciones
 │   │   │   ├── Middleware/
 │   │   │   │   └── CheckAdminMiddleware.php     # Verifica is_global_admin
-│   │   │   ├── Requests/                       # Validación (39 Form Requests)
-│   │   │   └── Resources/                      # PostResource, UserResource
+│   │   │   ├── Requests/                       # Validación (41 Form Requests)
+│   │   │   └── Resources/                      # PostResource, UserResource, CommunityResource, FollowerResource
 │   │   ├── Jobs/
 │   │   │   └── UnbanExpiredUsersJob.php         # Auto-desban cada minuto
 │   │   ├── Mail/
 │   │   │   └── SendOtpMail.php                  # Email de OTP
-│   │   ├── Models/                              # 27 modelos Eloquent
+│   │   ├── Models/                              # 29 modelos Eloquent
 │   │   └── Providers/
 │   ├── config/                                  # Configuración Laravel
 │   ├── database/
-│   │   ├── migrations/                          # 36 migraciones
+│   │   ├── migrations/                          # 40 migraciones
 │   │   ├── factories/                           # User, Post, Comment, Reaction
 │   │   └── seeders/                             # Datos de demostración
 │   ├── resources/
