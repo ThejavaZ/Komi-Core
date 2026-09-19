@@ -51,6 +51,35 @@
       </div>
     </div>
 
+    <!-- Ban Info Card (shown when user is banned or suspended) -->
+    <div v-if="user.status === 'banned' || user.status === 'suspended'" class="rounded-xl border p-5 mb-6" :class="user.banned_until ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-200'">
+      <div class="flex items-start gap-3">
+        <div class="flex-shrink-0 mt-0.5">
+          <ClockIcon v-if="user.banned_until" class="w-5 h-5 text-orange-600" />
+          <NoSymbolIcon v-else class="w-5 h-5 text-red-600" />
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-sm" :class="user.banned_until ? 'text-orange-800' : 'text-red-800'">
+            {{ user.banned_until ? 'Ban Temporal' : (user.status === 'suspended' ? 'Suspension' : 'Baneo Permanente') }}
+          </h3>
+          <div class="mt-2 space-y-1 text-sm" :class="user.banned_until ? 'text-orange-700' : 'text-red-700'">
+            <p v-if="user.banned_until">
+              <span class="font-medium">Expira:</span> {{ formatDate(user.banned_until) }}
+            </p>
+            <p v-if="banRemaining">
+              <span class="font-medium">Tiempo restante:</span> {{ banRemaining }}
+            </p>
+            <p v-if="lastBanLog">
+              <span class="font-medium">Baneado por:</span> {{ lastBanLog.admin_name }}
+            </p>
+            <p v-if="lastBanLog?.new_values?.reason">
+              <span class="font-medium">Motivo:</span> {{ lastBanLog.new_values.reason }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Temp ban section -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
       <h3 class="font-semibold text-gray-800 mb-3">Ban temporal</h3>
@@ -112,6 +141,35 @@
       </div>
     </div>
 
+    <!-- Moderation History -->
+    <div v-if="moderationHistory.length" class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-800">Historial de Moderacion</h3>
+      </div>
+      <div class="divide-y divide-gray-50">
+        <div v-for="log in moderationHistory" :key="log.id" class="px-5 py-3 flex items-start gap-3">
+          <div class="flex-shrink-0 mt-0.5">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center" :class="actionBg(log.action)">
+              <component :is="actionIcon(log.action)" class="w-3.5 h-3.5" :class="actionIconColor(log.action)" />
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-semibold text-gray-700">{{ actionLabel(log.action) }}</span>
+              <span class="text-xs text-gray-400">por {{ log.admin_name }}</span>
+              <span class="text-xs text-gray-400">&middot; {{ log.created_at }}</span>
+            </div>
+            <p v-if="log.new_values?.reason" class="text-xs text-gray-500 mt-1">
+              <span class="font-medium">Motivo:</span> {{ log.new_values.reason }}
+            </p>
+            <p v-if="log.new_values?.duration" class="text-xs text-gray-500">
+              <span class="font-medium">Duracion:</span> {{ log.new_values.duration }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Reports against user -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
       <div class="px-5 py-4 border-b border-gray-100">
@@ -169,7 +227,6 @@
 
     <!-- ======== DIALOGS ======== -->
 
-    <!-- Suspend -->
     <ConfirmDialog
       v-model="dialogSuspends"
       title="Suspender usuario"
@@ -185,7 +242,6 @@
       @confirm="confirmSuspend"
     />
 
-    <!-- Ban -->
     <ConfirmDialog
       v-model="dialogBan"
       title="Banear usuario"
@@ -201,7 +257,6 @@
       @confirm="confirmBan"
     />
 
-    <!-- Activate -->
     <ConfirmDialog
       v-model="dialogActivate"
       title="Activar usuario"
@@ -214,7 +269,6 @@
       @confirm="confirmActivate"
     />
 
-    <!-- Verify / Unverify -->
     <ConfirmDialog
       v-model="dialogVerify"
       :title="user?.is_verified ? 'Quitar verificacion' : 'Verificar usuario'"
@@ -227,7 +281,6 @@
       @confirm="confirmVerify"
     />
 
-    <!-- Shadowban -->
     <ConfirmDialog
       v-model="dialogShadowban"
       :title="user?.is_shadowbanned ? 'Quitar shadowban' : 'Aplicar shadowban'"
@@ -240,7 +293,6 @@
       @confirm="confirmShadowban"
     />
 
-    <!-- Temp ban -->
     <ConfirmDialog
       v-model="dialogTempBan"
       title="Ban temporal"
@@ -259,8 +311,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import {
   ExclamationTriangleIcon,
@@ -273,10 +325,10 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const route = useRoute();
-const router = useRouter();
 const loading = ref(true);
 const user = ref(null);
 const customBanHours = ref(24);
+const moderationHistory = ref([]);
 
 const headers = {
   Accept: 'application/json',
@@ -294,14 +346,43 @@ const dialogShadowban = computed({ get: () => dialog.value === 'shadowban' || di
 const dialogTempBan = computed({ get: () => dialog.value === 'tempban', set: (v) => { if (!v) dialog.value = null; } });
 
 const tempBanLabel = computed(() => {
-  if (dialog.value === 'tempban:24h') return '24 horas';
-  if (dialog.value === 'tempban:7d') return '7 dias';
-  if (dialog.value === 'tempban:30d') return '30 dias';
-  if (dialog.value === 'tempban:custom') return `${customBanHours.value} horas`;
+  if (pendingTempBan === '24h') return '24 horas';
+  if (pendingTempBan === '7d') return '7 dias';
+  if (pendingTempBan === '30d') return '30 dias';
+  if (pendingTempBan === 'custom') return `${customBanHours.value} horas`;
   return '';
 });
 
 let pendingTempBan = null;
+
+// Ban remaining time
+const banRemaining = ref('');
+let banTimer = null;
+
+function updateBanRemaining() {
+  if (!user.value?.banned_until) { banRemaining.value = ''; return; }
+  const end = new Date(user.value.banned_until);
+  const now = new Date();
+  const diff = end - now;
+  if (diff <= 0) { banRemaining.value = 'Expirado'; return; }
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  banRemaining.value = parts.join(' ');
+}
+
+// Last ban log entry
+const lastBanLog = computed(() => {
+  return moderationHistory.value.find(
+    (l) => l.action === 'user.update' && l.new_values?.status === 'banned'
+  ) || moderationHistory.value.find(
+    (l) => l.action === 'user.tempban'
+  );
+});
 
 function openTempBan(duration) {
   pendingTempBan = duration;
@@ -313,6 +394,8 @@ async function fetchUser() {
     const res = await fetch(`/admin/api/users/${route.params.id}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
     const data = await res.json();
     user.value = { ...data.user, stats: data.stats, communities: data.communities, reports_against: data.reports_against, recent_posts: data.recent_posts };
+    moderationHistory.value = data.moderation_history || [];
+    updateBanRemaining();
   } catch (e) {
     console.error('Error:', e);
   } finally {
@@ -329,6 +412,8 @@ async function updateUser(payload) {
     });
     const data = await res.json();
     user.value = { ...user.value, ...data.user };
+    updateBanRemaining();
+    await fetchUser();
   } catch (e) {
     console.error('Error:', e);
   }
@@ -342,6 +427,7 @@ async function toggleShadowban() {
     });
     const data = await res.json();
     user.value = { ...user.value, ...data.user };
+    await fetchUser();
   } catch (e) {
     console.error('Error:', e);
   }
@@ -359,6 +445,8 @@ async function tempBan(duration, reason) {
     });
     const data = await res.json();
     user.value = { ...user.value, ...data.user };
+    updateBanRemaining();
+    await fetchUser();
   } catch (e) {
     console.error('Error:', e);
   }
@@ -370,6 +458,38 @@ function confirmActivate() { updateUser({ status: 'active', banned_until: null }
 function confirmVerify() { updateUser({ is_verified: !user.value.is_verified }); }
 function confirmShadowban() { toggleShadowban(); }
 function confirmTempBan(reason) { tempBan(pendingTempBan, reason); }
+
+function actionLabel(action) {
+  const map = {
+    'user.update': 'Cambio de estado',
+    'user.warn': 'Advertencia',
+    'user.tempban': 'Ban temporal',
+    'user.shadowban.toggle': 'Shadowban',
+    'user.bulk.ban': 'Baneo masivo',
+  };
+  return map[action] || action;
+}
+
+function actionBg(action) {
+  if (action?.includes('ban') || action === 'user.update') return 'bg-red-100';
+  if (action?.includes('warn')) return 'bg-orange-100';
+  if (action?.includes('shadowban')) return 'bg-purple-100';
+  return 'bg-gray-100';
+}
+
+function actionIcon(action) {
+  if (action?.includes('ban') || action === 'user.update') return NoSymbolIcon;
+  if (action?.includes('warn')) return ExclamationTriangleIcon;
+  if (action?.includes('shadowban')) return EyeSlashIcon;
+  return ClockIcon;
+}
+
+function actionIconColor(action) {
+  if (action?.includes('ban') || action === 'user.update') return 'text-red-600';
+  if (action?.includes('warn')) return 'text-orange-600';
+  if (action?.includes('shadowban')) return 'text-purple-600';
+  return 'text-gray-600';
+}
 
 function statusBadge(status) {
   const map = { active: 'bg-green-100 text-green-700', pending: 'bg-yellow-100 text-yellow-700', suspended: 'bg-orange-100 text-orange-700', banned: 'bg-red-100 text-red-700' };
@@ -391,5 +511,12 @@ function formatDateShort(date) {
   return new Date(date).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-onMounted(fetchUser);
+onMounted(() => {
+  fetchUser();
+  banTimer = setInterval(updateBanRemaining, 60000);
+});
+
+onUnmounted(() => {
+  if (banTimer) clearInterval(banTimer);
+});
 </script>

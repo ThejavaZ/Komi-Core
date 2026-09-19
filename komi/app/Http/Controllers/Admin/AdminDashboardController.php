@@ -197,6 +197,22 @@ class AdminDashboardController extends Controller
             ->sortByDesc('created_at')
             ->values();
 
+        $moderationHistory = AdminLog::where('target_type', User::class)
+            ->where('target_id', $user->id)
+            ->with('admin')
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->map(fn ($log) => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'admin_name' => $log->admin?->name ?? 'Sistema',
+                'old_values' => $log->old_values,
+                'new_values' => $log->new_values,
+                'ip_address' => $log->ip_address,
+                'created_at' => $log->created_at?->diffForHumans(),
+            ]);
+
         return response()->json([
             'user' => $user,
             'stats' => [
@@ -207,6 +223,7 @@ class AdminDashboardController extends Controller
             'recent_posts' => $recentPosts,
             'communities' => $communities,
             'reports_against' => $reportsAgainst,
+            'moderation_history' => $moderationHistory,
         ]);
     }
 
