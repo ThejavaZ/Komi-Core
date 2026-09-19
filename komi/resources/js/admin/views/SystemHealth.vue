@@ -104,7 +104,7 @@
   </div>
 </template>
 <script setup>
-import { showErrorToast } from '@/../api.js';
+import { showErrorToast } from '../api';
 import { ref, computed, onMounted } from 'vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';
 import { api } from '../api';

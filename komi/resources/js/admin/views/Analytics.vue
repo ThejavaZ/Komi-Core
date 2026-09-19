@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { showErrorToast } from '@/../api.js';
+import { showErrorToast } from '../api';
 import { ref, computed, onMounted } from 'vue';
 import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {

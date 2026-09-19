@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { showErrorToast } from '@/../api.js';
+import { showErrorToast } from '../api';
 import { ref, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
 

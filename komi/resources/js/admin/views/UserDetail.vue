@@ -311,7 +311,7 @@
 </template>
 
 <script setup>
-import { showErrorToast } from '@/../api.js';
+import { showErrorToast } from '../api';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../api';

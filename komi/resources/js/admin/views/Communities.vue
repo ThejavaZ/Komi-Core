@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { showErrorToast } from '@/../api.js';
+import { showErrorToast } from '../api';
 import { ref, reactive, onMounted } from 'vue';
 import DataTable from '../components/DataTable.vue';
 import ConfirmDialog from '../components/ConfirmDialog.vue';

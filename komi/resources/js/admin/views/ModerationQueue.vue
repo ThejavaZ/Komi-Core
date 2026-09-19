@@ -106,7 +106,7 @@
 </template>
 
 <script setup>
-import { showErrorToast } from '@/../api.js';
+import { showErrorToast } from '../api';
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import DataTable from '../components/DataTable.vue';
