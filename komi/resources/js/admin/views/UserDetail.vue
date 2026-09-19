@@ -2,6 +2,7 @@
   <div v-if="loading" class="space-y-4">
     <div class="h-32 bg-gray-100 rounded-xl animate-pulse" />
     <div class="h-48 bg-gray-100 rounded-xl animate-pulse" />
+    <div class="h-64 bg-gray-100 rounded-xl animate-pulse" />
   </div>
   <div v-else-if="user">
     <!-- User header -->
@@ -14,16 +15,18 @@
           <div class="flex items-center gap-3 mb-1">
             <h2 class="text-xl font-bold text-gray-900">{{ user.name }}</h2>
             <span v-if="user.is_verified" class="text-blue-500 text-sm" title="Verificado">&#10003;</span>
+            <span v-if="user.is_shadowbanned" class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Shadowban</span>
             <span v-if="user.is_global_admin" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Admin</span>
           </div>
           <p class="text-sm text-gray-500">@{{ user.username }} &middot; {{ user.email }}</p>
           <p v-if="user.bio" class="text-sm text-gray-600 mt-2">{{ user.bio }}</p>
           <div class="flex items-center gap-4 mt-3">
             <span class="text-xs px-2 py-1 rounded-full" :class="statusBadge(user.status)">{{ user.status }}</span>
-            <span class="text-xs text-gray-400">Registro: {{ user.created_at }}</span>
+            <span v-if="user.banned_until" class="text-xs text-red-500">Baneado hasta: {{ formatDate(user.banned_until) }}</span>
+            <span class="text-xs text-gray-400">Registro: {{ formatDate(user.created_at) }}</span>
           </div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <button
             v-if="user.status === 'active'"
             @click="updateUser({ status: 'suspended' })"
@@ -36,13 +39,38 @@
           >Banear</button>
           <button
             v-if="user.status === 'suspended' || user.status === 'banned'"
-            @click="updateUser({ status: 'active' })"
+            @click="updateUser({ status: 'active', banned_until: null })"
             class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-100"
           >Activar</button>
           <button
             @click="updateUser({ is_verified: !user.is_verified })"
             class="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-100"
           >{{ user.is_verified ? 'Quitar verificación' : 'Verificar' }}</button>
+          <button
+            @click="toggleShadowban"
+            class="text-xs px-3 py-1.5 rounded-lg"
+            :class="user.is_shadowbanned ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'"
+          >{{ user.is_shadowbanned ? 'Quitar shadowban' : 'Shadowban' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Temp ban section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
+      <h3 class="font-semibold text-gray-800 mb-3">Ban temporal</h3>
+      <div class="flex items-center gap-3 flex-wrap">
+        <button @click="tempBan('24h')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">24 horas</button>
+        <button @click="tempBan('7d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">7 días</button>
+        <button @click="tempBan('30d')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">30 días</button>
+        <div class="flex items-center gap-2">
+          <input
+            v-model="customBanHours"
+            type="number"
+            min="1"
+            placeholder="Horas"
+            class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button @click="tempBan('custom')" class="text-xs bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg hover:bg-orange-100">Aplicar</button>
         </div>
       </div>
     </div>
@@ -50,16 +78,69 @@
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-4 mb-6">
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-        <p class="text-2xl font-bold text-gray-900">{{ userStats.posts }}</p>
+        <p class="text-2xl font-bold text-gray-900">{{ user.stats?.posts ?? 0 }}</p>
         <p class="text-xs text-gray-500">Publicaciones</p>
       </div>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-        <p class="text-2xl font-bold text-gray-900">{{ userStats.comments }}</p>
+        <p class="text-2xl font-bold text-gray-900">{{ user.stats?.comments ?? 0 }}</p>
         <p class="text-xs text-gray-500">Comentarios</p>
       </div>
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center">
-        <p class="text-2xl font-bold text-gray-900">{{ userStats.reactions }}</p>
+        <p class="text-2xl font-bold text-gray-900">{{ user.stats?.reactions ?? 0 }}</p>
         <p class="text-xs text-gray-500">Reacciones</p>
+      </div>
+    </div>
+
+    <!-- Communities -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-800">Comunidades</h3>
+      </div>
+      <div class="p-5">
+        <ul v-if="user.communities && user.communities.length" class="space-y-3">
+          <li v-for="community in user.communities" :key="community.id" class="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0">
+            <div>
+              <p class="text-sm font-medium text-gray-800">{{ community.name }}</p>
+              <p class="text-xs text-gray-400">@{{ community.slug }}</p>
+            </div>
+            <span class="text-xs text-gray-400">{{ community.posts_count ?? 0 }} posts</span>
+          </li>
+        </ul>
+        <p v-else class="text-sm text-gray-400 text-center py-4">No pertenece a ninguna comunidad</p>
+      </div>
+    </div>
+
+    <!-- Reports against user -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+      <div class="px-5 py-4 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-800">Reportes contra el usuario</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table v-if="user.reports_against && user.reports_against.length" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-left text-gray-500">
+              <th class="px-5 py-3 font-medium">Fecha</th>
+              <th class="px-5 py-3 font-medium">Reportado por</th>
+              <th class="px-5 py-3 font-medium">Tipo</th>
+              <th class="px-5 py-3 font-medium">Razón</th>
+              <th class="px-5 py-3 font-medium">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="report in user.reports_against" :key="report.id" class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+              <td class="px-5 py-3 text-gray-400 text-xs">{{ formatDate(report.created_at) }}</td>
+              <td class="px-5 py-3 text-gray-700">{{ report.reporter?.name ?? 'Desconocido' }}</td>
+              <td class="px-5 py-3">
+                <span class="px-1.5 py-0.5 rounded bg-gray-100 text-xs">{{ report.reportable_type?.split('\\').pop() ?? 'N/A' }}</span>
+              </td>
+              <td class="px-5 py-3 text-gray-600 text-xs">{{ report.reason }}</td>
+              <td class="px-5 py-3">
+                <span class="text-xs px-2 py-1 rounded-full" :class="reportStatusBadge(report.status)">{{ report.status }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="text-sm text-gray-400 text-center py-4">No hay reportes contra este usuario</p>
       </div>
     </div>
 
@@ -69,14 +150,14 @@
         <h3 class="font-semibold text-gray-800">Publicaciones recientes</h3>
       </div>
       <div class="p-5">
-        <ul v-if="recentPosts.length" class="space-y-3">
-          <li v-for="post in recentPosts" :key="post.id" class="border-b border-gray-50 pb-3 last:border-0">
+        <ul v-if="user.recent_posts && user.recent_posts.length" class="space-y-3">
+          <li v-for="post in user.recent_posts" :key="post.id" class="border-b border-gray-50 pb-3 last:border-0">
             <p class="text-sm text-gray-700">{{ post.content }}</p>
             <div class="flex items-center gap-3 mt-1 text-xs text-gray-400">
               <span class="px-1.5 py-0.5 rounded bg-gray-100">{{ post.type }}</span>
               <span>{{ post.likes_count }} likes</span>
               <span>{{ post.comments_count }} comments</span>
-              <span>{{ post.created_at }}</span>
+              <span>{{ formatDateShort(post.created_at) }}</span>
             </div>
           </li>
         </ul>
@@ -94,16 +175,19 @@ const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
 const user = ref(null);
-const userStats = ref({ posts: 0, comments: 0, reactions: 0 });
-const recentPosts = ref([]);
+const customBanHours = ref(24);
+
+const headers = {
+  Accept: 'application/json',
+  'Content-Type': 'application/json',
+  'X-Requested-With': 'XMLHttpRequest',
+};
 
 async function fetchUser() {
   try {
     const res = await fetch(`/admin/api/users/${route.params.id}`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
     const data = await res.json();
-    user.value = data.user;
-    userStats.value = data.stats;
-    recentPosts.value = data.recent_posts;
+    user.value = { ...data.user, stats: data.stats, communities: data.communities, reports_against: data.reports_against, recent_posts: data.recent_posts };
   } catch (e) {
     console.error('Error:', e);
   } finally {
@@ -115,7 +199,7 @@ async function updateUser(payload) {
   try {
     const res = await fetch(`/admin/api/users/${route.params.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      headers,
       body: JSON.stringify(payload),
     });
     const data = await res.json();
@@ -125,8 +209,75 @@ async function updateUser(payload) {
   }
 }
 
+async function toggleShadowban() {
+  try {
+    const res = await fetch(`/admin/api/users/${route.params.id}/shadowban`, {
+      method: 'POST',
+      headers,
+    });
+    const data = await res.json();
+    user.value = data.user;
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
+async function tempBan(duration) {
+  try {
+    const body = { duration };
+    if (duration === 'custom') {
+      body.custom_hours = customBanHours.value;
+    }
+    const res = await fetch(`/admin/api/users/${route.params.id}/temp-ban`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    user.value = data.user;
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
 function statusBadge(status) {
-  return { active: 'bg-green-100 text-green-700', pending: 'bg-yellow-100 text-yellow-700', suspended: 'bg-orange-100 text-orange-700', banned: 'bg-red-100 text-red-700' }[status] || 'bg-gray-100 text-gray-600';
+  const map = {
+    active: 'bg-green-100 text-green-700',
+    pending: 'bg-yellow-100 text-yellow-700',
+    suspended: 'bg-orange-100 text-orange-700',
+    banned: 'bg-red-100 text-red-700',
+  };
+  return map[status] || 'bg-gray-100 text-gray-600';
+}
+
+function reportStatusBadge(status) {
+  const map = {
+    pending: 'bg-yellow-100 text-yellow-700',
+    reviewed: 'bg-blue-100 text-blue-700',
+    resolved: 'bg-green-100 text-green-700',
+    dismissed: 'bg-gray-100 text-gray-600',
+  };
+  return map[status] || 'bg-gray-100 text-gray-600';
+}
+
+function formatDate(date) {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatDateShort(date) {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 onMounted(fetchUser);

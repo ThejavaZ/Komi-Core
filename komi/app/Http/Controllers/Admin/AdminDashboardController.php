@@ -161,6 +161,25 @@ class AdminDashboardController extends Controller
             'created_at' => $post->created_at?->diffForHumans(),
         ]);
 
+        $communities = $user->communities()->withCount('posts')->get();
+
+        $reportsAgainst = Report::where('reportable_type', 'App\Models\Post')
+            ->whereIn('reportable_id', $user->posts()->pluck('id'))
+            ->with('reporter')
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->merge(
+                Report::where('reportable_type', 'App\Models\Comment')
+                    ->whereIn('reportable_id', $user->comments()->pluck('id'))
+                    ->with('reporter')
+                    ->latest()
+                    ->limit(20)
+                    ->get()
+            )
+            ->sortByDesc('created_at')
+            ->values();
+
         return response()->json([
             'user' => $user,
             'stats' => [
@@ -169,6 +188,8 @@ class AdminDashboardController extends Controller
                 'reactions' => $reactionsCount,
             ],
             'recent_posts' => $recentPosts,
+            'communities' => $communities,
+            'reports_against' => $reportsAgainst,
         ]);
     }
 

@@ -67,6 +67,16 @@ const routes = [
                 name: 'admin.system',
                 component: () => import('../views/SystemHealth.vue'),
             },
+            {
+                path: 'auto-mod',
+                name: 'admin.auto-mod',
+                component: () => import('../views/AutoMod.vue'),
+            },
+            {
+                path: 'settings',
+                name: 'admin.settings',
+                component: () => import('../views/Settings.vue'),
+            },
         ],
     },
 ];

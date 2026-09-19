@@ -1,7 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\Admin2FAController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\AdminAutoModController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminModerationController;
+use App\Http\Controllers\Admin\AdminPostController;
+use App\Http\Controllers\Admin\AdminTagController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -13,31 +18,66 @@ Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('adm
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
+// 2FA verification (during login flow)
+Route::get('/admin/2fa', [AdminAuthController::class, 'show2FALogin'])->name('admin.2fa.show');
+
 // Admin protegido (auth + admin)
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
 
     // API interna para el panel (JSON)
     Route::prefix('api')->name('api.')->group(function () {
+        // Dashboard
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Users
         Route::get('/users', [AdminDashboardController::class, 'users'])->name('users');
         Route::get('/users/{id}', [AdminDashboardController::class, 'showUser'])->name('users.show');
         Route::put('/users/{id}', [AdminDashboardController::class, 'updateUser'])->name('users.update');
+        Route::post('/users/{id}/warn', [AdminDashboardController::class, 'warnUser'])->name('users.warn');
+        Route::post('/users/bulk', [AdminDashboardController::class, 'bulkUsers'])->name('users.bulk');
+
+        // Posts (dashboard defaults)
         Route::get('/posts', [AdminDashboardController::class, 'posts'])->name('posts');
         Route::delete('/posts/{id}', [AdminDashboardController::class, 'destroyPost'])->name('posts.destroy');
+        Route::post('/posts/bulk', [AdminDashboardController::class, 'bulkPosts'])->name('posts.bulk');
+
+        // Posts management (extended)
+        Route::put('/posts/{id}', [AdminPostController::class, 'update'])->name('posts.update');
+        Route::get('/posts/trashed', [AdminPostController::class, 'trashed'])->name('posts.trashed');
+        Route::post('/posts/{id}/restore', [AdminPostController::class, 'restore'])->name('posts.restore');
+
+        // Tags (read from dashboard)
         Route::get('/tags', [AdminDashboardController::class, 'tags'])->name('tags');
+
+        // Tags CRUD
+        Route::post('/tags', [AdminTagController::class, 'store'])->name('tags.store');
+        Route::put('/tags/{id}', [AdminTagController::class, 'update'])->name('tags.update');
+        Route::delete('/tags/{id}', [AdminTagController::class, 'destroy'])->name('tags.destroy');
+
+        // Reports
         Route::get('/reports', [AdminDashboardController::class, 'reports'])->name('reports');
         Route::put('/reports/{id}', [AdminDashboardController::class, 'resolveReport'])->name('reports.resolve');
+
+        // Communities
         Route::get('/communities', [AdminDashboardController::class, 'communities'])->name('communities');
         Route::delete('/communities/{id}', [AdminDashboardController::class, 'destroyCommunity'])->name('communities.destroy');
 
-        // Moderation
+        // Moderation (basic from dashboard)
         Route::get('/moderation', [AdminDashboardController::class, 'moderationQueue'])->name('moderation');
         Route::post('/moderation/{id}/action', [AdminDashboardController::class, 'moderateContent'])->name('moderation.action');
 
-        // Users extra
-        Route::post('/users/{id}/warn', [AdminDashboardController::class, 'warnUser'])->name('users.warn');
-        Route::post('/users/bulk', [AdminDashboardController::class, 'bulkUsers'])->name('users.bulk');
-        Route::post('/posts/bulk', [AdminDashboardController::class, 'bulkPosts'])->name('posts.bulk');
+        // Moderation (extended)
+        Route::get('/moderation/search', [AdminModerationController::class, 'index'])->name('moderation.search');
+        Route::get('/moderation/user/{userId}', [AdminModerationController::class, 'showUserHistory'])->name('moderation.user-history');
+        Route::post('/users/{id}/shadowban', [AdminModerationController::class, 'toggleShadowban'])->name('users.shadowban');
+        Route::post('/users/{id}/temp-ban', [AdminModerationController::class, 'tempBan'])->name('users.temp-ban');
+        Route::post('/posts/{id}/restore', [AdminModerationController::class, 'restorePost'])->name('posts.restore-moderation');
+
+        // Auto-mod
+        Route::get('/auto-mod', [AdminAutoModController::class, 'index'])->name('auto-mod.index');
+        Route::post('/auto-mod', [AdminAutoModController::class, 'store'])->name('auto-mod.store');
+        Route::put('/auto-mod/{id}', [AdminAutoModController::class, 'update'])->name('auto-mod.update');
+        Route::delete('/auto-mod/{id}', [AdminAutoModController::class, 'destroy'])->name('auto-mod.destroy');
 
         // Appeals
         Route::get('/appeals', [AdminDashboardController::class, 'appeals'])->name('appeals');
@@ -52,6 +92,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         // System
         Route::get('/system/health', [AdminDashboardController::class, 'systemHealth'])->name('system.health');
         Route::get('/system/errors', [AdminDashboardController::class, 'systemErrors'])->name('system.errors');
+
+        // 2FA
+        Route::get('/2fa/status', [Admin2FAController::class, 'status'])->name('2fa.status');
+        Route::get('/2fa/setup', [Admin2FAController::class, 'setup'])->name('2fa.setup');
+        Route::post('/2fa/enable', [Admin2FAController::class, 'enable'])->name('2fa.enable');
+        Route::post('/2fa/disable', [Admin2FAController::class, 'disable'])->name('2fa.disable');
+        Route::post('/2fa/verify', [Admin2FAController::class, 'verify'])->name('2fa.verify');
     });
 
     // Catch-all: serve the Vue SPA for any admin route
