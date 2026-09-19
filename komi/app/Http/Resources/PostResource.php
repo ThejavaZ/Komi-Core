@@ -104,7 +104,7 @@ class PostResource extends JsonResource
                     ],
                 ];
             }),
-            'quiz' => $this->whenLoaded('quiz', function () {
+            'quiz' => $this->whenLoaded('quiz', function () use ($deleted) {
                 if ($deleted) return null;
                 return [
                     'id' => $this->quiz->id,
@@ -126,7 +126,7 @@ class PostResource extends JsonResource
                     ]),
                 ];
             }),
-            'wiki' => $this->whenLoaded('wiki', function () {
+            'wiki' => $this->whenLoaded('wiki', function () use ($deleted) {
                 if ($deleted) return null;
                 return [
                     'id' => $this->wiki->id,
@@ -136,7 +136,7 @@ class PostResource extends JsonResource
                     'version' => $this->wiki->version,
                 ];
             }),
-            'question' => $this->whenLoaded('question', function () {
+            'question' => $this->whenLoaded('question', function () use ($deleted) {
                 if ($deleted) return null;
                 return [
                     'id' => $this->question->id,
