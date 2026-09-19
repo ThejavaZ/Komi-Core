@@ -448,67 +448,6 @@ class AdminDashboardController extends Controller
         return response()->json($logs);
     }
 
-    // ─── Analytics ──────────────────────────────────────────────
-    public function analytics(Request $request): JsonResponse
-    {
-        $days = (int) $request->input('days', 14);
-        $since = now()->subDays($days);
-
-        $postsPerDay = Post::where('created_at', '>=', $since)
-            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        $usersPerDay = User::where('created_at', '>=', $since)
-            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        $reactionsPerDay = \App\Models\Reaction::where('created_at', '>=', $since)
-            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        $postsByCommunity = Community::withCount('posts')
-            ->orderByDesc('posts_count')
-            ->limit(10)
-            ->get()
-            ->pluck('posts_count', 'name');
-
-        $reportsByReason = Report::select('reason', DB::raw('count(*) as total'))
-            ->groupBy('reason')
-            ->orderByDesc('total')
-            ->pluck('total', 'reason');
-
-        $activityByHour = Post::where('created_at', '>=', $since)
-            ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('count(*) as total'))
-            ->groupBy('hour')
-            ->orderBy('hour')
-            ->pluck('total', 'hour');
-
-        $userGrowthWeekly = User::where('created_at', '>=', $since)
-            ->select(
-                DB::raw('YEARWEEK(created_at, 1) as week'),
-                DB::raw('count(*) as total')
-            )
-            ->groupBy('week')
-            ->orderBy('week')
-            ->get();
-
-        return response()->json([
-            'posts_per_day' => $postsPerDay,
-            'users_per_day' => $usersPerDay,
-            'reactions_per_day' => $reactionsPerDay,
-            'posts_by_community' => $postsByCommunity,
-            'reports_by_reason' => $reportsByReason,
-            'activity_by_hour' => $activityByHour,
-            'user_growth_weekly' => $userGrowthWeekly,
-        ]);
-    }
-
     // ─── System Health ──────────────────────────────────────────
     public function systemHealth(): JsonResponse
     {
