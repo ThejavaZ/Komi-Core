@@ -224,6 +224,16 @@ class PostController extends Controller
             return true;
         });
 
+        if ($liked) {
+            $post->loadMissing('user');
+            \App\Models\AppNotification::notify(
+                $post->user,
+                $request->user(),
+                \App\Models\AppNotification::TYPE_LIKE,
+                $post->id,
+            );
+        }
+
         return response()->json([
             'status' => 'success',
             'liked' => $liked,

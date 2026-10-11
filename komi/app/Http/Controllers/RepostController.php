@@ -41,6 +41,14 @@ class RepostController extends Controller
             return $repost;
         });
 
+        $post->loadMissing('user');
+        \App\Models\AppNotification::notify(
+            $post->user,
+            $request->user(),
+            \App\Models\AppNotification::TYPE_REPOST,
+            $post->id,
+        );
+
         $repost->load(['user', 'community', 'originalPost' => function ($q) {
             $q->with(['user', 'pollOptions']);
         }]);

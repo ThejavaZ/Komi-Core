@@ -65,6 +65,16 @@ class CommentController extends Controller
 
         $comment->load('user');
 
+        if ($post->user) {
+            \App\Models\AppNotification::notify(
+                $post->user,
+                $request->user(),
+                \App\Models\AppNotification::TYPE_COMMENT,
+                $post->id,
+                $comment->id,
+            );
+        }
+
         return (new CommentResource($comment))->response()->setStatusCode(201);
     }
 }

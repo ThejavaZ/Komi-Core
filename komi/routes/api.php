@@ -8,6 +8,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ReportController;
@@ -103,6 +104,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // ─── Bloqueo de usuarios ──────────────────────────────────
     Route::post('/users/{user}/block', [BlockController::class, 'toggleBlock']);
     Route::get('/users/blocked', [BlockController::class, 'blockedUsers']);
+
+    // ─── Notificaciones ───────────────────────────────────────
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
 
     // ─── Reportes ─────────────────────────────────────────────
     Route::post('/reports', [ReportController::class, 'store']);

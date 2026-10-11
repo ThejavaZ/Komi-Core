@@ -56,14 +56,22 @@ class BookmarkController extends Controller
 
         $bookmarks = Bookmark::query()
             ->where('user_id', $request->user()->id)
-            ->with('post')
+            ->with(['post.user', 'post.community', 'post.tags', 'post.pollOptions', 'post.originalPost.user'])
+            ->with('post', function ($query) use ($request) {
+                $query->withCount('comments')
+                    ->withExists(['reactions as is_liked_by_me' => fn ($q) => $q->where('user_id', $request->user()->id)]);
+            })
             ->latest()
             ->paginate($perPage);
 
-        $posts = $bookmarks->getCollection()->map(fn ($b) => $b->post);
-
-        return PostResource::collection(
-            $posts->filter()->values()->paginate($perPage)
+        // Reemplazar la coleccion de bookmarks por sus posts manteniendo la paginacion real
+        $bookmarks->setCollection(
+            $bookmarks->getCollection()
+                ->map(fn ($bookmark) => $bookmark->post)
+                ->filter()
+                ->values()
         );
+
+        return PostResource::collection($bookmarks);
     }
 }

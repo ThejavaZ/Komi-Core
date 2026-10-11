@@ -27,6 +27,12 @@ class FollowerController extends Controller
         } else {
             $request->user()->following()->attach($user->id);
             $following = true;
+
+            \App\Models\AppNotification::notify(
+                $user,
+                $request->user(),
+                \App\Models\AppNotification::TYPE_FOLLOW,
+            );
         }
 
         return response()->json([
