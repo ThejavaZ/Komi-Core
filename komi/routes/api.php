@@ -52,6 +52,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Feed de publicaciones
     Route::get('/posts', [PostController::class, 'index']);
 
+    // Feed "Siguiendo" (debe ir antes de /posts/{post})
+    Route::get('/posts/following', [PostController::class, 'following']);
+
+    // Post individual (deep-linking)
+    Route::get('/posts/{post}', [PostController::class, 'show']);
+
     // Crear una publicacion
     Route::post('/posts', [PostController::class, 'store']);
 
@@ -81,6 +87,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Crear un comentario (soporta respuestas anidadas con parent_id)
     Route::post('/posts/{post}/comments', [CommentController::class, 'store']);
+
+    // Gestion de comentarios (editar/borrar propios, likes)
+    Route::put('/comments/{comment}', [CommentController::class, 'update']);
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
+    Route::post('/comments/{comment}/like', [CommentController::class, 'toggleLike']);
+
+    // Busqueda unificada (usuarios, posts, comunidades, hashtags)
+    Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index']);
 
     // Votar en una encuesta
     Route::post('/posts/{post}/poll/vote', [PollController::class, 'vote']);
@@ -136,5 +150,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/communities/{community}/leave', [CommunityController::class, 'leave']);
     Route::get('/communities/{community}/members', [CommunityController::class, 'members']);
     Route::delete('/communities/{community}/members/{user}', [CommunityController::class, 'removeMember']);
+
+    // ─── Hashtags: posts por tag (slug) ─────────────────────
+    Route::get('/tags/{slug}/posts', [TagController::class, 'posts']);
 
 });

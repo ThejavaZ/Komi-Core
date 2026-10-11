@@ -20,6 +20,9 @@ class CommentResource extends JsonResource
             'post_id' => $this->post_id,
             'parent_id' => $this->parent_id,
             'replies_count' => $this->when(isset($this->replies_count), (int) $this->replies_count),
+            'likes_count' => (int) ($this->likes_count ?? 0),
+            'is_liked_by_me' => (bool) ($this->is_liked_by_me ?? false),
+            'is_edited' => ! is_null($this->edited_at),
             'created_at' => $this->created_at?->toISOString(),
             'created_at_human' => $this->created_at?->diffForHumans(),
             'user' => $this->whenLoaded('user', fn () => $this->user ? [

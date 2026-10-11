@@ -23,10 +23,47 @@ class PostController extends Controller
             ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
+            ->orderByDesc('is_pinned')
             ->latest()
             ->paginate($perPage);
 
         return PostResource::collection($posts);
+    }
+
+    /**
+     * Feed "Siguiendo": posts unicamente de los usuarios que sigue el viewer.
+     */
+    public function following(Request $request): AnonymousResourceCollection
+    {
+        $perPage = min((int) $request->input('per_page', 15), 50);
+
+        $posts = Post::query()
+            ->whereIn('user_id', function ($query) use ($request) {
+                $query->select('following_id')
+                    ->from('followers')
+                    ->where('follower_id', $request->user()->id);
+            })
+            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
+            ->withCount('comments')
+            ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
+            ->orderByDesc('is_pinned')
+            ->latest()
+            ->paginate($perPage);
+
+        return PostResource::collection($posts);
+    }
+
+    /**
+     * Post individual (para deep-linking desde notificaciones / busqueda).
+     * El binding aplica ContentVisibilityScope: ocultos devuelven 404.
+     */
+    public function show(Request $request, Post $post): PostResource
+    {
+        $post->load(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
+            ->withCount('comments')
+            ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)]);
+
+        return new PostResource($post);
     }
 
     public function store(StorePostRequest $request): PostResource

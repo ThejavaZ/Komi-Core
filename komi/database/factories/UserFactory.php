@@ -56,7 +56,10 @@ class UserFactory extends Factory
             'gender' => fake()->randomElement(['male', 'female', 'unspecified']),
             'is_verified' => fake()->boolean(15), // 15% son cuentas verificadas
             'is_premium' => fake()->boolean(10),
-            'is_global_admin' => fake()->boolean(2),
+            // Nunca admin por defecto: los tests de visibilidad dependen de
+            // que un usuario normal NO vea contenido oculto. Los tests que
+            // necesiten admin lo crean explicitamente.
+            'is_global_admin' => false,
             // Todas activas por defecto para poblar el feed de prueba.
             'status' => 'active',
         ];

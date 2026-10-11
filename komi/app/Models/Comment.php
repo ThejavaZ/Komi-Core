@@ -29,6 +29,8 @@ class Comment extends Model
     {
         return [
             'replies_count' => 'integer',
+            'likes_count' => 'integer',
+            'edited_at' => 'datetime',
         ];
     }
 
@@ -50,5 +52,10 @@ class Comment extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function likes(): HasMany
+    {
+        return $this->hasMany(CommentReaction::class);
     }
 }
