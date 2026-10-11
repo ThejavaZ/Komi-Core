@@ -19,6 +19,9 @@ class NotificationController extends Controller
 
         $notifications = AppNotification::query()
             ->where('user_id', $request->user()->id)
+            // Oculta notificaciones de usuarios bloqueados (el scope global
+            // de User se aplica dentro del whereHas).
+            ->whereHas('fromUser')
             ->with('fromUser:id,name,username,avatar,is_verified')
             ->with('comment:id,content')
             ->latest()
@@ -34,6 +37,7 @@ class NotificationController extends Controller
     {
         $count = AppNotification::query()
             ->where('user_id', $request->user()->id)
+            ->whereHas('fromUser')
             ->whereNull('read_at')
             ->count();
 

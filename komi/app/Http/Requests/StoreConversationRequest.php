@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
+use App\Models\UserBlock;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreConversationRequest extends FormRequest
@@ -33,9 +33,18 @@ class StoreConversationRequest extends FormRequest
             }
 
             if ($me && $targetId !== $me->id) {
-                $target = User::find($targetId);
+                // Consulta directa al pivot: el scope global de User ocultaria
+                // al usuario bloqueado y la validacion se saltaria el bloqueo.
+                $hasConflict = UserBlock::query()
+                    ->where(function ($query) use ($me, $targetId) {
+                        $query->where('blocker_id', $me->id)
+                            ->where('blocked_id', $targetId)
+                            ->orWhere('blocker_id', $targetId)
+                            ->where('blocked_id', $me->id);
+                    })
+                    ->exists();
 
-                if ($target && ($me->isBlocking($target) || $target->isBlocking($me))) {
+                if ($hasConflict) {
                     $validator->errors()->add('user_id', 'No puedes iniciar un chat con este usuario.');
                 }
             }

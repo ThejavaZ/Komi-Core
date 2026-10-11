@@ -23,11 +23,16 @@ class MessageController extends Controller
             return response()->json(['message' => 'No formas parte de esta conversación.'], 403);
         }
 
-        // En conversaciones directas, no enviar si hay bloqueo con el otro
+        // En conversaciones directas, no enviar si hay bloqueo con el otro.
+        // withoutGlobalScope: el scope ocultaria al bloqueado y $other seria
+        // null, saltandose la comprobacion.
         if ($conversation->type === Conversation::TYPE_DIRECT) {
-            $other = $conversation->users()->where('user_id', '!=', $me->id)->first();
+            $other = $conversation->users()
+                ->withoutGlobalScope(\App\Models\Scopes\HideBlockedUsersScope::class)
+                ->where('user_id', '!=', $me->id)
+                ->first();
 
-            if ($other && ($me->isBlocking($other) || $other->isBlocking($me))) {
+            if ($other && $me->hasBlockConflictWith($other)) {
                 return response()->json(['message' => 'No puedes enviar mensajes a este usuario.'], 403);
             }
         }

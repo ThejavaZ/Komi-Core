@@ -83,7 +83,9 @@ class PostResource extends JsonResource
             'is_reposted' => $deleted ? false : $isReposted,
             'original_post_id' => $deleted ? null : $this->original_post_id,
             'original_post' => $this->whenLoaded('originalPost', function () {
-                if ($this->originalPost->trashed()) {
+                // originalPost puede ser null si su autor esta bloqueado o
+                // shadowbanned para el viewer (ContentVisibilityScope).
+                if ($this->originalPost === null || $this->originalPost->trashed()) {
                     return null;
                 }
                 return [
@@ -96,12 +98,12 @@ class PostResource extends JsonResource
                     'comments_count' => (int) $this->originalPost->comments_count,
                     'reposts_count' => (int) $this->originalPost->reposts_count,
                     'created_at' => $this->originalPost->created_at?->toISOString(),
-                    'user' => [
+                    'user' => $this->originalPost->user ? [
                         'id' => $this->originalPost->user->id,
                         'name' => $this->originalPost->user->name,
                         'username' => $this->originalPost->user->username,
                         'avatar_url' => $this->originalPost->user->avatar,
-                    ],
+                    ] : null,
                 ];
             }),
             'quiz' => $this->whenLoaded('quiz', function () use ($deleted) {
@@ -153,13 +155,13 @@ class PostResource extends JsonResource
                 'slug' => $this->community->slug,
             ] : null),
             'deleted' => $deleted,
-            'user' => $this->whenLoaded('user', fn () => [
+            'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $deleted ? 'Usuario eliminado' : $this->user->name,
                 'username' => $deleted ? 'usuario_eliminado' : $this->user->username,
                 'avatar_url' => $deleted ? null : $this->user->avatar,
                 'is_verified' => $deleted ? false : (bool) $this->user->is_verified,
-            ]),
+            ] : null),
             'author_id' => $deleted ? null : $this->user_id,
             'poll' => $pollData,
         ];

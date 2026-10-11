@@ -93,6 +93,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Perfil de usuario ───────────────────────────────────
     Route::get('/users/search', [UserController::class, 'search']);
+    // Debe ir antes de /users/{username}, si no casaria con el patron.
+    Route::get('/users/blocked', [BlockController::class, 'blockedUsers']);
     Route::get('/users/{username}', [UserController::class, 'show']);
     Route::get('/users/{user}/posts', [UserController::class, 'userPosts']);
 
@@ -103,7 +105,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Bloqueo de usuarios ──────────────────────────────────
     Route::post('/users/{user}/block', [BlockController::class, 'toggleBlock']);
-    Route::get('/users/blocked', [BlockController::class, 'blockedUsers']);
 
     // ─── Notificaciones ───────────────────────────────────────
     Route::get('/notifications', [NotificationController::class, 'index']);

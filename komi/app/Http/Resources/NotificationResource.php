@@ -18,13 +18,13 @@ class NotificationResource extends JsonResource
             'comment_id' => $this->comment_id,
             'created_at' => $this->created_at?->toISOString(),
             'created_at_human' => $this->created_at?->diffForHumans(),
-            'from_user' => $this->whenLoaded('fromUser', fn () => [
+            'from_user' => $this->whenLoaded('fromUser', fn () => $this->fromUser ? [
                 'id' => $this->fromUser->id,
                 'name' => $this->fromUser->name,
                 'username' => $this->fromUser->username,
                 'avatar_url' => $this->fromUser->avatar,
                 'is_verified' => (bool) $this->fromUser->is_verified,
-            ]),
+            ] : null),
             'comment_preview' => $this->when(
                 $this->type === 'comment' && $this->comment,
                 fn () => \Str::limit($this->comment->content, 80),

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Scopes\HideBlockedUsersScope;
 
 #[Fillable([
     'name',
@@ -46,6 +47,11 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new HideBlockedUsersScope);
+    }
 
     protected function casts(): array
     {
@@ -131,24 +137,40 @@ class User extends Authenticatable
 
     public function blockedUsers(): BelongsToMany
     {
+        // Sin el scope: el usuario debe poder ver y desbloquear su propia lista.
         return $this->belongsToMany(User::class, 'user_blocks', 'blocker_id', 'blocked_id')
+            ->withoutGlobalScope(HideBlockedUsersScope::class)
             ->withTimestamps();
     }
 
     public function blockedByUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'user_blocks', 'blocked_id', 'blocker_id')
+            ->withoutGlobalScope(HideBlockedUsersScope::class)
             ->withTimestamps();
     }
 
     public function isBlocking(User $user): bool
     {
-        return $this->blockedUsers()->where('blocked_id', $user->id)->exists();
+        // Consulta directa al pivot: la relación blockedUsers pasa por el
+        // modelo User y el scope global ocultaría al bloqueado.
+        return UserBlock::query()
+            ->where('blocker_id', $this->id)
+            ->where('blocked_id', $user->id)
+            ->exists();
     }
 
     public function isBlockedBy(User $user): bool
     {
-        return $this->blockedByUsers()->where('blocker_id', $user->id)->exists();
+        return UserBlock::query()
+            ->where('blocker_id', $user->id)
+            ->where('blocked_id', $this->id)
+            ->exists();
+    }
+
+    public function hasBlockConflictWith(User $user): bool
+    {
+        return $this->isBlocking($user) || $user->isBlocking($this);
     }
 
     // ─── Utility Methods ──────────────────────────────────────
