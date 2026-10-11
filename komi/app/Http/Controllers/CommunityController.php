@@ -62,6 +62,21 @@ class CommunityController extends Controller
         return new CommunityResource($community);
     }
 
+    /**
+     * Feed de posts de una comunidad (paginado, mas recientes primero).
+     */
+    public function posts(Request $request, Community $community): AnonymousResourceCollection
+    {
+        $posts = $community->posts()
+            ->with(['user', 'community', 'tags', 'pollOptions', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
+            ->withCount('comments')
+            ->withExists(['reactions as is_liked_by_me' => fn ($q) => $q->where('user_id', $request->user()->id)])
+            ->latest()
+            ->paginate(min((int) $request->input('per_page', 15), 50));
+
+        return \App\Http\Resources\PostResource::collection($posts);
+    }
+
     public function update(UpdateCommunityRequest $request, Community $community): JsonResponse
     {
         $userId = $request->user()->id;

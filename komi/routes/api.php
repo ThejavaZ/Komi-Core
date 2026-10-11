@@ -121,6 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/communities', [CommunityController::class, 'index']);
     Route::post('/communities', [CommunityController::class, 'store']);
     Route::get('/communities/{community}', [CommunityController::class, 'show']);
+    Route::get('/communities/{community}/posts', [CommunityController::class, 'posts']);
     Route::put('/communities/{community}', [CommunityController::class, 'update']);
     Route::delete('/communities/{community}', [CommunityController::class, 'destroy']);
     Route::post('/communities/{community}/join', [CommunityController::class, 'join']);
