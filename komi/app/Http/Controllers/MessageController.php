@@ -3,64 +3,71 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMessageRequest;
-use App\Http\Requests\UpdateMessageRequest;
+use App\Http\Resources\MessageResource;
+use App\Models\Conversation;
 use App\Models\Message;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MessageController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Enviar un mensaje a una conversacion (solo participantes).
      */
-    public function index()
+    public function store(StoreMessageRequest $request, Conversation $conversation): JsonResponse|MessageResource
     {
-        //
+        $me = $request->user();
+
+        if (! $conversation->isParticipant($me)) {
+            return response()->json(['message' => 'No formas parte de esta conversación.'], 403);
+        }
+
+        // En conversaciones directas, no enviar si hay bloqueo con el otro
+        if ($conversation->type === Conversation::TYPE_DIRECT) {
+            $other = $conversation->users()->where('user_id', '!=', $me->id)->first();
+
+            if ($other && ($me->isBlocking($other) || $other->isBlocking($me))) {
+                return response()->json(['message' => 'No puedes enviar mensajes a este usuario.'], 403);
+            }
+        }
+
+        $message = DB::transaction(function () use ($request, $conversation, $me): Message {
+            $message = $conversation->messages()->create([
+                'user_id' => $me->id,
+                'content' => $request->validated('content'),
+            ]);
+
+            $conversation->update(['last_message_at' => $message->created_at]);
+
+            return $message;
+        });
+
+        $message->load('user');
+
+        return (new MessageResource($message))->response()->setStatusCode(201);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Eliminar un mensaje propio (solo el autor).
      */
-    public function create()
+    public function destroy(Request $request, Message $message): JsonResponse
     {
-        //
-    }
+        if ($message->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Solo puedes eliminar tus propios mensajes.'], 403);
+        }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreMessageRequest $request)
-    {
-        //
-    }
+        DB::transaction(function () use ($message): void {
+            $conversation = $message->conversation;
+            $message->delete();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Message $message)
-    {
-        //
-    }
+            // Actualizar last_message_at si se elimino el ultimo mensaje
+            if ($conversation) {
+                $last = $conversation->messages()->latest('id')->first();
+                $conversation->update(['last_message_at' => $last?->created_at]);
+            }
+        });
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Message $message)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateMessageRequest $request, Message $message)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Message $message)
-    {
-        //
+        return response()->json(['status' => 'success']);
     }
 }

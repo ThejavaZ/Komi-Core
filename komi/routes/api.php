@@ -5,7 +5,9 @@ use App\Http\Controllers\BlockController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\FollowerController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ReportController;
@@ -104,6 +106,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Reportes ─────────────────────────────────────────────
     Route::post('/reports', [ReportController::class, 'store']);
+
+    // ─── Chat / Mensajes ──────────────────────────────────────
+    Route::get('/conversations', [ConversationController::class, 'index']);
+    Route::post('/conversations', [ConversationController::class, 'store']);
+    Route::post('/conversations/group', [ConversationController::class, 'storeGroup']);
+    Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
+    Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy']);
+    Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
+    Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store']);
+    Route::delete('/messages/{message}', [MessageController::class, 'destroy']);
 
     // ─── Comunidades ─────────────────────────────────────────
     Route::get('/communities', [CommunityController::class, 'index']);
