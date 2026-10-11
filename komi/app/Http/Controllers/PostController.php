@@ -168,14 +168,18 @@ class PostController extends Controller
         }
 
         $post->edited_at = now();
-        $post->is_pinned = $request->boolean('is_pinned') ?? !$post->is_pinned;
+
+        if ($request->has('is_pinned')) {
+            $post->is_pinned = $request->boolean('is_pinned');
+        }
+
         $post->save();
 
         $post->load(['user', 'community', 'tags', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
 
         return (new PostResource($post))->additional([
             'status' => 'success',
-            'message' => $post->is_pinned ? 'Publicación fijada.' : 'Publicación despinada.',
+            'message' => 'Publicación actualizada.',
         ]);
     }
 

@@ -121,7 +121,6 @@ class PostResource extends JsonResource
                         'answers' => $q->answers->map(fn ($a) => [
                             'id' => $a->id,
                             'answer_text' => $a->answer_text,
-                            'is_correct' => $a->is_correct,
                         ]),
                     ]),
                 ];
