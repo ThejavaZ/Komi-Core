@@ -38,6 +38,7 @@ use App\Models\Scopes\HideBlockedUsersScope;
     'banned_until',
     'provider',
     'provider_id',
+    'coins',
 ])]
 #[Hidden([
     'password',
@@ -107,6 +108,18 @@ class User extends Authenticatable
     public function reports(): HasMany
     {
         return $this->hasMany(Report::class, 'user_id');
+    }
+
+    // ─── Store ────────────────────────────────────────────────
+
+    public function storeItems(): HasMany
+    {
+        return $this->hasMany(StoreItem::class, 'seller_id');
+    }
+
+    public function storePurchases(): HasMany
+    {
+        return $this->hasMany(StorePurchase::class, 'buyer_id');
     }
 
     public function twoFactor(): HasOne

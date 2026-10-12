@@ -24,9 +24,16 @@ use Illuminate\Support\Facades\Route;
 
 // Rate limiting para evitar fuerza bruta / abuso de OTP
 Route::middleware('throttle:6,1')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 });
+
+// Registro: 6/min + tope diario de cuentas por IP (anti-spam).
+Route::middleware(['throttle:6,1', 'throttle:register-ip'])
+    ->post('/register', [AuthController::class, 'register']);
+
+// Reenvio del codigo OTP (3/min por correo).
+Route::middleware('throttle:resend-otp')
+    ->post('/resend-otp', [AuthController::class, 'resendOtp']);
 
 Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
 
@@ -59,13 +66,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/posts/{post}', [PostController::class, 'show']);
 
     // Crear una publicacion
-    Route::post('/posts', [PostController::class, 'store']);
+    Route::post('/posts', [PostController::class, 'store'])->middleware('throttle:posts-write');
 
     // Editar una publicacion
     Route::put('/posts/{post}', [PostController::class, 'update']);
 
     // Dar / quitar like a una publicacion
-    Route::post('/posts/{post}/like', [PostController::class, 'toggleLike']);
+    Route::post('/posts/{post}/like', [PostController::class, 'toggleLike'])->middleware('throttle:likes');
 
     // Toggle pin/unpin a publicacion
     Route::post('/posts/{post}/pin', [PostController::class, 'togglePin']);
@@ -136,7 +143,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
     Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy']);
     Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
-    Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store']);
+    Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store'])->middleware('throttle:messages');
     Route::delete('/messages/{message}', [MessageController::class, 'destroy']);
 
     // ─── Comunidades ─────────────────────────────────────────
@@ -153,5 +160,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Hashtags: posts por tag (slug) ─────────────────────
     Route::get('/tags/{slug}/posts', [TagController::class, 'posts']);
+
+    // ─── Tienda ─────────────────────────────────────────────
+    Route::get('/store', [\App\Http\Controllers\StoreController::class, 'index']);
+    Route::get('/store/mine', [\App\Http\Controllers\StoreController::class, 'mine']);
+    Route::post('/store/items', [\App\Http\Controllers\StoreController::class, 'store']);
+    Route::post('/store/items/{item}/purchase', [\App\Http\Controllers\StoreController::class, 'purchase']);
 
 });

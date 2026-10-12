@@ -104,6 +104,35 @@ class AuthController extends Controller
     }
 
     /**
+     * Reenviar el codigo OTP de verificacion (solo para cuentas aun pendientes).
+     */
+    public function resendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // No revelamos si el correo existe ni reenviamos a cuentas ya activas.
+        if (! $user || $user->status !== 'pending') {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Si la cuenta existe y esta pendiente, reenviamos el codigo.',
+            ], 200);
+        }
+
+        $otpCode = random_int(100000, 999999);
+        Cache::put('otp_'.$user->email, $otpCode, now()->addMinutes(10));
+        Mail::to($user->email)->send(new SendOtpMail($otpCode));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Codigo de verificacion reenviado.',
+        ], 200);
+    }
+
+    /**
      * Login
      */
     public function login(LoginRequest $request)

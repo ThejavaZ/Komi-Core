@@ -19,6 +19,7 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'username' => $this->username,
             'email' => $this->when($request->user()?->id === $this->id, fn () => $this->email),
+            'coins' => $this->when($request->user()?->id === $this->id, fn () => $this->coins),
             'bio' => $this->bio,
             'avatar' => $this->avatar,
             'banner' => $this->banner,
