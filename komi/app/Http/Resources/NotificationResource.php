@@ -16,6 +16,8 @@ class NotificationResource extends JsonResource
             'is_read' => $this->read_at !== null,
             'post_id' => $this->post_id,
             'comment_id' => $this->comment_id,
+            'conversation_id' => $this->conversation_id,
+            'message_id' => $this->message_id,
             'created_at' => $this->created_at?->toISOString(),
             'created_at_human' => $this->created_at?->diffForHumans(),
             'from_user' => $this->whenLoaded('fromUser', fn () => $this->fromUser ? [

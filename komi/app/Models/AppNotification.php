@@ -11,6 +11,7 @@ class AppNotification extends Model
     public const TYPE_COMMENT = 'comment';
     public const TYPE_FOLLOW = 'follow';
     public const TYPE_REPOST = 'repost';
+    public const TYPE_MESSAGE = 'message';
 
     protected $fillable = [
         'user_id',
@@ -18,6 +19,8 @@ class AppNotification extends Model
         'type',
         'post_id',
         'comment_id',
+        'conversation_id',
+        'message_id',
         'read_at',
     ];
 
@@ -48,6 +51,16 @@ class AppNotification extends Model
         return $this->belongsTo(Comment::class);
     }
 
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+
+    public function message(): BelongsTo
+    {
+        return $this->belongsTo(Message::class);
+    }
+
     /**
      * Crea una notificacion si el destinatario no es el propio actor.
      */
@@ -68,6 +81,28 @@ class AppNotification extends Model
             'type' => $type,
             'post_id' => $postId,
             'comment_id' => $commentId,
+        ]);
+    }
+
+    /**
+     * Crea una notificacion de mensaje directo si el destinatario no es el emisor.
+     */
+    public static function notifyMessage(
+        User $recipient,
+        User $actor,
+        Conversation $conversation,
+        Message $message,
+    ): ?self {
+        if ($recipient->id === $actor->id) {
+            return null;
+        }
+
+        return self::create([
+            'user_id' => $recipient->id,
+            'from_user_id' => $actor->id,
+            'type' => self::TYPE_MESSAGE,
+            'conversation_id' => $conversation->id,
+            'message_id' => $message->id,
         ]);
     }
 }

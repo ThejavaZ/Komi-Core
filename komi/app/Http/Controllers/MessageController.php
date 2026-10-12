@@ -50,6 +50,20 @@ class MessageController extends Controller
 
         $message->load('user');
 
+        // Notificar a cada participante que no sea el emisor.
+        $recipients = $conversation->users()
+            ->where('user_id', '!=', $me->id)
+            ->get();
+
+        foreach ($recipients as $recipient) {
+            \App\Models\AppNotification::notifyMessage(
+                $recipient,
+                $me,
+                $conversation,
+                $message,
+            );
+        }
+
         return (new MessageResource($message))->response()->setStatusCode(201);
     }
 
