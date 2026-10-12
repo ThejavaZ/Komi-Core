@@ -167,5 +167,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/store/mine', [\App\Http\Controllers\StoreController::class, 'mine']);
     Route::post('/store/items', [\App\Http\Controllers\StoreController::class, 'store']);
     Route::post('/store/items/{item}/purchase', [\App\Http\Controllers\StoreController::class, 'purchase']);
+    Route::get('/me/cosmetics', [\App\Http\Controllers\StoreController::class, 'myCosmetics']);
+    Route::post('/store/items/{item}/apply', [\App\Http\Controllers\StoreController::class, 'apply']);
+
+    // ─── Coins: check-in diario y tips ─────────────────────
+    Route::get('/checkin/status', [\App\Http\Controllers\DailyCheckinController::class, 'status']);
+    Route::post('/checkin', [\App\Http\Controllers\DailyCheckinController::class, 'claim'])->middleware('throttle:checkin');
+    Route::post('/users/{user}/tip', [\App\Http\Controllers\TipController::class, 'store'])->middleware('throttle:tips');
 
 });

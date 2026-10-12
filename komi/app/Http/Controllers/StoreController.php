@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreItemRequest;
 use App\Http\Resources\StoreItemResource;
+use App\Http\Resources\UserResource;
 use App\Models\StoreItem;
 use App\Models\StorePurchase;
 use Illuminate\Http\JsonResponse;
@@ -107,5 +108,61 @@ class StoreController extends Controller
                 'coins_remaining' => $buyer->fresh()->coins,
             ],
         ], 201);
+    }
+
+    /**
+     * Cosmeticos que yo he comprado (para elegir cual aplicar).
+     */
+    public function myCosmetics(Request $request): AnonymousResourceCollection
+    {
+        $items = StoreItem::query()
+            ->whereNotNull('cosmetic_type')
+            ->whereHas('purchases', fn ($q) => $q->where('buyer_id', $request->user()->id))
+            ->get();
+
+        return StoreItemResource::collection($items);
+    }
+
+    /**
+     * Aplica un cosmético comprado al perfil del usuario (frame, tema de
+     * chat o título). Devuelve el usuario actualizado.
+     */
+    public function apply(Request $request, StoreItem $item): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($item->cosmetic_type === null) {
+            return response()->json(['message' => 'Este item no es un cosmético aplicable.'], 422);
+        }
+
+        $owns = StorePurchase::query()
+            ->where('buyer_id', $user->id)
+            ->where('item_id', $item->id)
+            ->exists();
+
+        if (! $owns) {
+            return response()->json(['message' => 'Debes comprar este cosmético antes de aplicarlo.'], 403);
+        }
+
+        $updates = match ($item->cosmetic_type) {
+            StoreItem::COSMETIC_FRAME => ['active_frame_id' => $item->id],
+            StoreItem::COSMETIC_CHAT_THEME => ['active_chat_theme_id' => $item->id],
+            StoreItem::COSMETIC_TITLE => [
+                'custom_title' => $item->preview_data['text'] ?? $item->title,
+            ],
+            default => null,
+        };
+
+        if ($updates === null) {
+            return response()->json(['message' => 'Tipo de cosmético no soportado.'], 422);
+        }
+
+        $user->forceFill($updates)->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Cosmético aplicado.',
+            'data' => (new UserResource($user->fresh()))->toArray($request),
+        ]);
     }
 }

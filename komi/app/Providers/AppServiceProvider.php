@@ -59,6 +59,16 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($userId.'|'.$conversationId);
         });
 
+        // Check-in diario: 5/min por usuario (la logica de "hoy ya reclamado" refuerza).
+        RateLimiter::for('checkin', function (Request $request) {
+            return Limit::perMinute(5)->by($request->user()?->id ?? $request->ip());
+        });
+
+        // Tips: 10/min por usuario.
+        RateLimiter::for('tips', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?? $request->ip());
+        });
+
         // Registro de cuentas: tope diario por IP (complementa el 6/min).
         RateLimiter::for('register-ip', function (Request $request) {
             return Limit::perDay(5)->by($request->ip());

@@ -22,6 +22,15 @@ class ConversationResource extends JsonResource
                     'username' => $other->username,
                     'avatar_url' => $other->avatar,
                     'is_verified' => (bool) $other->is_verified,
+                    'custom_title' => $other->custom_title,
+                    'active_frame' => $other->active_frame_id !== null ? [
+                        'id' => $other->activeFrame->id,
+                        'preview_data' => $other->activeFrame->preview_data,
+                    ] : null,
+                    'active_chat_theme' => $other->active_chat_theme_id !== null ? [
+                        'id' => $other->activeChatTheme->id,
+                        'preview_data' => $other->activeChatTheme->preview_data,
+                    ] : null,
                 ];
             }
         }

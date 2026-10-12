@@ -13,6 +13,11 @@ class StoreItem extends Model
     public const TYPE_SUBSCRIPTION = 'subscription';
     public const TYPE_ITEM = 'item';
 
+    // Clase de cosmético (si el item es aplicable al perfil/chat).
+    public const COSMETIC_FRAME = 'frame';
+    public const COSMETIC_CHAT_THEME = 'chat_theme';
+    public const COSMETIC_TITLE = 'title';
+
     public const STATUS_ACTIVE = 'active';
     public const STATUS_ARCHIVED = 'archived';
 
@@ -23,6 +28,7 @@ class StoreItem extends Model
         'title',
         'description',
         'type',
+        'cosmetic_type',
         'price',
         'preview_data',
         'status',

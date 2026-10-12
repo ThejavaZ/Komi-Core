@@ -12,6 +12,7 @@ class AppNotification extends Model
     public const TYPE_FOLLOW = 'follow';
     public const TYPE_REPOST = 'repost';
     public const TYPE_MESSAGE = 'message';
+    public const TYPE_TIP = 'tip';
 
     protected $fillable = [
         'user_id',

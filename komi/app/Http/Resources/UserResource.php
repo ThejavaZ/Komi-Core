@@ -25,6 +25,17 @@ class UserResource extends JsonResource
             'banner' => $this->banner,
             'theme_color' => $this->theme_color,
             'gender' => $this->gender,
+            'custom_title' => $this->custom_title,
+            'active_frame' => $this->when($this->active_frame_id !== null, fn () => [
+                'id' => $this->activeFrame->id,
+                'cosmetic_type' => $this->activeFrame->cosmetic_type,
+                'preview_data' => $this->activeFrame->preview_data,
+            ]),
+            'active_chat_theme' => $this->when($this->active_chat_theme_id !== null, fn () => [
+                'id' => $this->activeChatTheme->id,
+                'cosmetic_type' => $this->activeChatTheme->cosmetic_type,
+                'preview_data' => $this->activeChatTheme->preview_data,
+            ]),
             'is_verified' => $this->is_verified,
             'is_premium' => $this->is_premium,
             'status' => $this->status,

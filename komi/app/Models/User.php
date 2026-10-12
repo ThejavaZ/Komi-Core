@@ -60,6 +60,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'last_checkin_at' => 'date',
             'is_verified' => 'boolean',
             'is_premium' => 'boolean',
             'is_global_admin' => 'boolean',
@@ -120,6 +121,18 @@ class User extends Authenticatable
     public function storePurchases(): HasMany
     {
         return $this->hasMany(StorePurchase::class, 'buyer_id');
+    }
+
+    // ─── Cosmetics ───────────────────────────────────────────
+
+    public function activeFrame(): BelongsTo
+    {
+        return $this->belongsTo(StoreItem::class, 'active_frame_id');
+    }
+
+    public function activeChatTheme(): BelongsTo
+    {
+        return $this->belongsTo(StoreItem::class, 'active_chat_theme_id');
     }
 
     public function twoFactor(): HasOne

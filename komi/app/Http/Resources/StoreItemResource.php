@@ -14,6 +14,7 @@ class StoreItemResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'type' => $this->type,
+            'cosmetic_type' => $this->cosmetic_type,
             'price' => $this->price,
             'preview_data' => $this->preview_data,
             'status' => $this->status,
