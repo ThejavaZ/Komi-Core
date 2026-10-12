@@ -75,13 +75,17 @@ class AppNotification extends Model
             return null;
         }
 
-        return self::create([
+        $notification = self::create([
             'user_id' => $recipient->id,
             'from_user_id' => $actor->id,
             'type' => $type,
             'post_id' => $postId,
             'comment_id' => $commentId,
         ]);
+
+        self::broadcast($notification);
+
+        return $notification;
     }
 
     /**
@@ -97,12 +101,29 @@ class AppNotification extends Model
             return null;
         }
 
-        return self::create([
+        $notification = self::create([
             'user_id' => $recipient->id,
             'from_user_id' => $actor->id,
             'type' => self::TYPE_MESSAGE,
             'conversation_id' => $conversation->id,
             'message_id' => $message->id,
         ]);
+
+        self::broadcast($notification);
+
+        return $notification;
+    }
+
+    /**
+     * Emite la notificacion en tiempo real al destinatario con su contador de no leidas.
+     */
+    private static function broadcast(self $notification): void
+    {
+        $unread = self::query()
+            ->where('user_id', $notification->user_id)
+            ->whereNull('read_at')
+            ->count();
+
+        event(new \App\Events\NotificationReceived($notification, $unread));
     }
 }

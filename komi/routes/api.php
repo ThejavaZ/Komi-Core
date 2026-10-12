@@ -144,6 +144,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy']);
     Route::get('/conversations/{conversation}/messages', [ConversationController::class, 'messages']);
     Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store'])->middleware('throttle:messages');
+    Route::post('/conversations/{conversation}/typing', [MessageController::class, 'typing'])->middleware('throttle:typing');
     Route::delete('/messages/{message}', [MessageController::class, 'destroy']);
 
     // ─── Comunidades ─────────────────────────────────────────

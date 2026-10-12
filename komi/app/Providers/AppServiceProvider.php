@@ -51,6 +51,14 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($userId.'|'.$conversationId);
         });
 
+        // Typing (indiciador "escribiendo..."): 60/min por usuario y conversacion.
+        RateLimiter::for('typing', function (Request $request) {
+            $userId = $request->user()?->id ?? $request->ip();
+            $conversationId = $request->route('conversation')?->id ?? 'none';
+
+            return Limit::perMinute(60)->by($userId.'|'.$conversationId);
+        });
+
         // Registro de cuentas: tope diario por IP (complementa el 6/min).
         RateLimiter::for('register-ip', function (Request $request) {
             return Limit::perDay(5)->by($request->ip());

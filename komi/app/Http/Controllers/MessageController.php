@@ -50,7 +50,7 @@ class MessageController extends Controller
 
         $message->load('user');
 
-        // Notificar a cada participante que no sea el emisor.
+        // Notificar y emitir en tiempo real a cada participante que no sea el emisor.
         $recipients = $conversation->users()
             ->where('user_id', '!=', $me->id)
             ->get();
@@ -62,9 +62,33 @@ class MessageController extends Controller
                 $conversation,
                 $message,
             );
+
+            event(new \App\Events\MessageSent($message, $conversation, $recipient));
         }
 
         return (new MessageResource($message))->response()->setStatusCode(201);
+    }
+
+    /**
+     * Emite en tiempo real que el usuario esta escribiendo en una conversacion.
+     */
+    public function typing(Request $request, Conversation $conversation): JsonResponse
+    {
+        $me = $request->user();
+
+        if (! $conversation->isParticipant($me)) {
+            return response()->json(['message' => 'No formas parte de esta conversación.'], 403);
+        }
+
+        $recipients = $conversation->users()
+            ->where('user_id', '!=', $me->id)
+            ->get();
+
+        foreach ($recipients as $recipient) {
+            event(new \App\Events\UserTyping($conversation->id, $me, $recipient));
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     /**
