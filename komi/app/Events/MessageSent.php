@@ -36,7 +36,13 @@ class MessageSent implements ShouldBroadcastNow
         return [
             'id' => $this->message->id,
             'conversation_id' => $this->conversation->id,
+            'type' => $this->message->type ?? 'text',
             'content' => $this->message->content,
+            'media_url' => $this->message->media_url,
+            'media_full_url' => $this->message->media_url
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->message->media_url)
+                : null,
+            'sticker_meta' => $this->message->sticker_meta,
             'created_at' => $this->message->created_at?->toISOString(),
             'user' => [
                 'id' => $this->message->user_id,

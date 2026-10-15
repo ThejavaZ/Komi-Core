@@ -38,9 +38,23 @@ class MessageController extends Controller
         }
 
         $message = DB::transaction(function () use ($request, $conversation, $me): Message {
+            $data = $request->validated();
+
+            $type = $data['type'] ?? Message::TYPE_TEXT;
+            $mediaUrl = null;
+
+            if ($request->hasFile('image')) {
+                $mediaUrl = $request->file('image')->store('messages', 'public');
+                // Un archivo adjunto siempre clasifica el mensaje como imagen.
+                $type = Message::TYPE_IMAGE;
+            }
+
             $message = $conversation->messages()->create([
                 'user_id' => $me->id,
-                'content' => $request->validated('content'),
+                'type' => $type,
+                'content' => $data['content'] ?? null,
+                'media_url' => $mediaUrl,
+                'sticker_meta' => $data['sticker_meta'] ?? null,
             ]);
 
             $conversation->update(['last_message_at' => $message->created_at]);

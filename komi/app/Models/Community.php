@@ -31,6 +31,11 @@ class Community extends Model
         return $this->hasMany(Post::class);
     }
 
+    public function chatRooms(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'community_users')

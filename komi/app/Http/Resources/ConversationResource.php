@@ -39,6 +39,7 @@ class ConversationResource extends JsonResource
             'id' => $this->id,
             'type' => $this->type,
             'title' => $this->title,
+            'community_id' => $this->community_id,
             'display_name' => $this->title ?? $otherUser['name'] ?? 'Chat',
             'last_message_at' => $this->last_message_at?->toISOString(),
             'unread_count' => $this->when(isset($this->unread_count), (int) $this->unread_count, 0),

@@ -159,6 +159,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/communities/{community}/members', [CommunityController::class, 'members']);
     Route::delete('/communities/{community}/members/{user}', [CommunityController::class, 'removeMember']);
 
+    // ─── Salas de chat por comunidad ────────────────────────
+    Route::get('/communities/{community}/rooms', [\App\Http\Controllers\CommunityRoomController::class, 'index']);
+    Route::post('/communities/{community}/rooms', [\App\Http\Controllers\CommunityRoomController::class, 'store']);
+    Route::post('/rooms/{room}/join', [\App\Http\Controllers\CommunityRoomController::class, 'join']);
+    Route::post('/rooms/{room}/leave', [\App\Http\Controllers\CommunityRoomController::class, 'leave']);
+
     // ─── Hashtags: posts por tag (slug) ─────────────────────
     Route::get('/tags/{slug}/posts', [TagController::class, 'posts']);
 
