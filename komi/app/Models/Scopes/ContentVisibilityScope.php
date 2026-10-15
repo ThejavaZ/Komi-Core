@@ -6,7 +6,6 @@ use App\Models\UserBlock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Global scope aplicado a Posts y Comments:
@@ -24,7 +23,7 @@ class ContentVisibilityScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        $viewer = Auth::user();
+        $viewer = ScopeViewer::get();
 
         // Los admins ven todo (necesario para moderar contenido shadowbanned).
         if ($viewer !== null && $viewer->is_global_admin) {
