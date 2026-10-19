@@ -15,7 +15,7 @@ class StorePostRequest extends FormRequest
     {
         return [
             'content' => ['required', 'string', 'max:5000'],
-            'type' => ['nullable', 'string', 'in:text,image,poll,quiz,wiki,question,link,list'],
+            'type' => ['nullable', 'string', 'in:text,image,poll,quiz,wiki,question,link,list,video'],
             'community_id' => ['nullable', 'integer', 'exists:communities,id'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'images' => ['nullable', 'array', 'max:5'],
@@ -26,6 +26,9 @@ class StorePostRequest extends FormRequest
             'poll_options.*' => ['required', 'string', 'max:200'],
             'tags' => ['nullable', 'array', 'max:5'],
             'tags.*' => ['required', 'string', 'max:30'],
+            // List
+            'list_items' => ['nullable', 'array', 'min:1', 'max:50'],
+            'list_items.*' => ['required', 'string', 'max:500'],
             // Quiz
             'quiz_title' => ['nullable', 'string', 'max:255'],
             'quiz_description' => ['nullable', 'string', 'max:1000'],

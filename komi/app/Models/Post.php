@@ -18,6 +18,9 @@ use App\Models\Scopes\ContentVisibilityScope;
     'content',
     'type',
     'image_url',
+    'link_url',
+    'video_provider',
+    'video_id',
     'likes_count',
     'comments_count',
     'vote_score',
@@ -25,6 +28,7 @@ use App\Models\Scopes\ContentVisibilityScope;
     'original_post_id',
     'edited_at',
     'is_pinned',
+    'is_featured',
 ])]
 class Post extends Model
 {
@@ -46,6 +50,7 @@ class Post extends Model
             'reposts_count' => 'integer',
             'edited_at' => 'datetime',
             'is_pinned' => 'boolean',
+            'is_featured' => 'boolean',
         ];
     }
 
@@ -124,5 +129,20 @@ class Post extends Model
     public function images(): HasMany
     {
         return $this->hasMany(PostImages::class)->orderBy('position');
+    }
+
+    public function listItems(): HasMany
+    {
+        return $this->hasMany(PostListItem::class)->orderBy('position');
+    }
+
+    /**
+     * Membresia del viewer en la comunidad del post (para can_feature).
+     * Se eager-loads con user_id del auth para evitar N+1 en feeds.
+     */
+    public function viewerMembership(): HasOne
+    {
+        return $this->hasOne(CommunityUser::class, 'community_id', 'community_id')
+            ->where('user_id', auth()->id());
     }
 }

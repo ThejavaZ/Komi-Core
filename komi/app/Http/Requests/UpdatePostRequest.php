@@ -26,6 +26,7 @@ class UpdatePostRequest extends FormRequest
             'content' => ['sometimes', 'required', 'string', 'max:5000'],
             'community_id' => ['sometimes', 'nullable', 'integer', 'exists:communities,id'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'edit_summary' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

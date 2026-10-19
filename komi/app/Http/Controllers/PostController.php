@@ -22,9 +22,10 @@ class PostController extends Controller
         $perPage = min((int) $request->input('per_page', 15), 50);
 
         $posts = Post::query()
-            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
+            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
+            ->orderByDesc('is_featured')
             ->orderByDesc('is_pinned')
             ->latest()
             ->paginate($perPage);
@@ -45,10 +46,10 @@ class PostController extends Controller
                     ->from('followers')
                     ->where('follower_id', $request->user()->id);
             })
-            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
+            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
-            ->orderByDesc('is_pinned')
+            ->orderByDesc('is_featured')
             ->latest()
             ->paginate($perPage);
 
@@ -61,7 +62,7 @@ class PostController extends Controller
      */
     public function show(Request $request, Post $post): PostResource
     {
-        $post->load(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
+        $post->load(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)]);
 
@@ -104,9 +105,22 @@ class PostController extends Controller
             $type = 'quiz';
         } elseif (!empty($data['wiki_title'])) {
             $type = 'wiki';
+        } elseif ($type === 'video') {
+            if (empty($data['link_url'])) {
+                abort(422, 'Un post de video necesita una URL.');
+            }
+
+            $parsed = $this->parseVideoUrl($data['link_url']);
+            if ($parsed === null) {
+                abort(422, 'URL de video no soportada. Usa un enlace de YouTube o Vimeo.');
+            }
+        } elseif (!empty($data['list_items'])) {
+            $type = 'list';
         } elseif (!empty($data['link_url'])) {
             $type = 'link';
         }
+
+        $video = $type === 'video' ? $this->parseVideoUrl($data['link_url']) : null;
 
         $post = $request->user()->posts()->create([
             'community_id' => $data['community_id'] ?? null,
@@ -114,6 +128,8 @@ class PostController extends Controller
             'type' => $type,
             'image_url' => $imageUrl,
             'link_url' => $data['link_url'] ?? null,
+            'video_provider' => $video[0] ?? null,
+            'video_id' => $video[1] ?? null,
         ]);
 
         foreach ($galleryPaths as $index => $path) {
@@ -176,6 +192,15 @@ class PostController extends Controller
             ]);
         }
 
+        if ($type === 'list' && !empty($data['list_items'])) {
+            foreach ($data['list_items'] as $position => $text) {
+                $post->listItems()->create([
+                    'position' => $position,
+                    'text' => $text,
+                ]);
+            }
+        }
+
         if (!empty($data['tags']) && is_array($data['tags'])) {
             $tagIds = collect($data['tags'])
                 ->map(function (string $tagName) {
@@ -195,7 +220,7 @@ class PostController extends Controller
             $post->tags()->sync($tagIds);
         }
 
-        $post->load(['user', 'community', 'pollOptions', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
+        $post->load(['user', 'community', 'pollOptions', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
         $post->is_liked_by_me = false;
 
         return (new PostResource($post))->additional([
@@ -232,7 +257,26 @@ class PostController extends Controller
 
         $post->save();
 
-        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
+        // Editar el contenido de un wiki crea una nueva version en el historial
+        if ($post->type === 'wiki' && $post->wasChanged('content')) {
+            $wiki = $post->wiki;
+
+            if ($wiki) {
+                $wiki->update([
+                    'version' => $wiki->version + 1,
+                    'last_editor_id' => $request->user()->id,
+                ]);
+
+                $wiki->versions()->create([
+                    'editor_id' => $request->user()->id,
+                    'version' => $wiki->version,
+                    'content' => $post->content,
+                    'edit_summary' => $data['edit_summary'] ?? null,
+                ]);
+            }
+        }
+
+        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
 
         return (new PostResource($post))->additional([
             'status' => 'success',
@@ -269,7 +313,7 @@ class PostController extends Controller
             $post->save();
         }
 
-        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
+        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
 
         return (new PostResource($post))->additional([
             'status' => 'success',
@@ -381,5 +425,76 @@ class PostController extends Controller
             'is_pinned' => $post->is_pinned,
             'message' => $post->is_pinned ? 'Publicación fijada.' : 'Publicación despinada.',
         ]);
+    }
+
+    /**
+     * Destacar / quitar destaque (solo moderadores de la comunidad o admin global).
+     */
+    public function toggleFeature(Request $request, Post $post): JsonResponse
+    {
+        $user = $request->user();
+
+        $isModerator = $user->is_global_admin
+            || ($post->community_id && \App\Models\CommunityUser::query()
+                ->where('community_id', $post->community_id)
+                ->where('user_id', $user->id)
+                ->whereIn('role', ['owner', 'admin'])
+                ->exists());
+
+        if (!$isModerator) {
+            abort(403, 'Solo los moderadores pueden destacar publicaciones.');
+        }
+
+        $post->is_featured = !$post->is_featured;
+        $post->save();
+
+        return response()->json([
+            'status' => 'success',
+            'is_featured' => $post->is_featured,
+            'message' => $post->is_featured
+                ? 'Publicación destacada.'
+                : 'Publicación quitada de destacados.',
+        ]);
+    }
+
+    /**
+     * Extrae proveedor e id de URLs de video soportadas (YouTube / Vimeo).
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    private function parseVideoUrl(string $url): ?array
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $host = preg_replace('/^www\./', '', $host);
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $query = [];
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        if (in_array($host, ['youtube.com', 'm.youtube.com', 'music.youtube.com'], true)) {
+            if (str_starts_with($path, '/watch') && !empty($query['v']) && preg_match('/^[\w-]{5,20}$/', $query['v'])) {
+                return ['youtube', $query['v']];
+            }
+            if (preg_match('#^/shorts/([\w-]{5,20})#', $path, $m)) {
+                return ['youtube', $m[1]];
+            }
+            if (preg_match('#^/embed/([\w-]{5,20})#', $path, $m)) {
+                return ['youtube', $m[1]];
+            }
+
+            return null;
+        }
+
+        if ($host === 'youtu.be') {
+            $id = ltrim($path, '/');
+
+            return preg_match('/^[\w-]{5,20}$/', $id) ? ['youtube', $id] : null;
+        }
+
+        if (in_array($host, ['vimeo.com', 'player.vimeo.com'], true)
+            && preg_match('#^/(?:video/)?(\d{6,15})(?:/|$)#', $path, $m)) {
+            return ['vimeo', $m[1]];
+        }
+
+        return null;
     }
 }

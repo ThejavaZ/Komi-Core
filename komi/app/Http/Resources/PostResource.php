@@ -77,6 +77,13 @@ class PostResource extends JsonResource
                 'position' => (int) $img->position,
             ])->values()),
             'link_url' => $deleted ? null : $this->link_url,
+            'video_provider' => $deleted ? null : $this->video_provider,
+            'video_id' => $deleted ? null : $this->video_id,
+            'list_items' => $this->whenLoaded('listItems', fn () => $this->listItems->map(fn ($item) => [
+                'id' => $item->id,
+                'position' => (int) $item->position,
+                'text' => $item->text,
+            ])->values()),
             'likes_count' => $deleted ? 0 : (int) $this->likes_count,
             'comments_count' => $deleted ? 0 : (int) ($this->comments_count ?? 0),
             'vote_score' => $deleted ? 0 : (int) ($this->vote_score ?? 0),
@@ -150,6 +157,9 @@ class PostResource extends JsonResource
                     'slug' => $this->wiki->slug,
                     'cover_image' => $this->wiki->cover_image,
                     'version' => $this->wiki->version,
+                    'content' => $this->content,
+                    'post_id' => $this->wiki->post_id,
+                    'community_id' => $this->wiki->community_id,
                 ];
             }),
             'question' => $this->whenLoaded('question', function () use ($deleted) {
@@ -162,6 +172,8 @@ class PostResource extends JsonResource
             }),
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             'is_pinned' => $deleted ? false : (bool) $this->is_pinned,
+            'is_featured' => $deleted ? false : (bool) $this->is_featured,
+            'can_feature' => $deleted ? false : $this->canFeatureFor($request, $userId),
             'is_edited' => ! $deleted && ! is_null($this->edited_at),
             'created_at' => $this->created_at?->toISOString(),
             'created_at_human' => $this->created_at?->diffForHumans(),
@@ -181,5 +193,30 @@ class PostResource extends JsonResource
             'author_id' => $deleted ? null : $this->user_id,
             'poll' => $pollData,
         ];
+    }
+
+    /**
+     * El viewer puede destacar este post si es admin global o
+     * owner/admin de su comunidad (usa viewerMembership eager-load).
+     */
+    private function canFeatureFor(Request $request, ?int $userId): bool
+    {
+        if (! $userId || ! $this->community_id) {
+            return false;
+        }
+
+        if ($request->user()->is_global_admin) {
+            return true;
+        }
+
+        if ($this->relationLoaded('viewerMembership')) {
+            return in_array($this->viewerMembership?->role, ['owner', 'admin'], true);
+        }
+
+        return \App\Models\CommunityUser::query()
+            ->where('community_id', $this->community_id)
+            ->where('user_id', $userId)
+            ->whereIn('role', ['owner', 'admin'])
+            ->exists();
     }
 }

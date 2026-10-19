@@ -82,6 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Toggle pin/unpin a publicacion
     Route::post('/posts/{post}/pin', [PostController::class, 'togglePin']);
 
+    // Destacar / quitar destaque (moderadores de la comunidad)
+    Route::post('/posts/{post}/feature', [PostController::class, 'toggleFeature']);
+
     // Upvote / Downvote / Remove vote
     Route::post('/posts/{post}/vote', [VoteController::class, 'vote']);
 
@@ -89,6 +92,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/quizzes/{quiz}/attempt', [QuizAttemptController::class, 'attempt']);
     Route::get('/quizzes/{quiz}/leaderboard', [QuizAttemptController::class, 'leaderboard']);
     Route::get('/quizzes/{quiz}/me', [QuizAttemptController::class, 'myAttempt']);
+
+    // Wikis: detalle, edicion versionada, historial y rollback
+    Route::get('/wikis/{wiki}', [\App\Http\Controllers\WikiController::class, 'show']);
+    Route::get('/wikis/{wiki}/versions', [\App\Http\Controllers\WikiController::class, 'versions']);
+    Route::get('/wikis/{wiki}/versions/{version}', [\App\Http\Controllers\WikiController::class, 'versionDetail']);
+    Route::put('/wikis/{wiki}', [\App\Http\Controllers\WikiController::class, 'update']);
+    Route::post('/wikis/{wiki}/rollback', [\App\Http\Controllers\WikiController::class, 'rollback']);
 
     // Toggle bookmark (guardar publicacion)
     Route::post('/posts/{post}/bookmark', [BookmarkController::class, 'toggle']);
