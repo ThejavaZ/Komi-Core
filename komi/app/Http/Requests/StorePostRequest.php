@@ -18,6 +18,8 @@ class StorePostRequest extends FormRequest
             'type' => ['nullable', 'string', 'in:text,image,poll,quiz,wiki,question,link,list'],
             'community_id' => ['nullable', 'integer', 'exists:communities,id'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'images' => ['nullable', 'array', 'max:5'],
+            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'image_url' => ['nullable', 'url', 'max:2048'],
             'link_url' => ['nullable', 'url', 'max:2048'],
             'poll_options' => ['nullable', 'array', 'min:2', 'max:6'],

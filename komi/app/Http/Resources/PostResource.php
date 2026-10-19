@@ -71,6 +71,11 @@ class PostResource extends JsonResource
             'type' => $deleted ? 'text' : ($this->type ?? 'text'),
             'media_url' => $deleted ? null : $this->image_url,
             'image_url' => $deleted ? null : $this->image_url,
+            'images' => $deleted ? [] : $this->whenLoaded('images', fn () => $this->images->map(fn ($img) => [
+                'id' => $img->id,
+                'url' => $img->url,
+                'position' => (int) $img->position,
+            ])->values()),
             'link_url' => $deleted ? null : $this->link_url,
             'likes_count' => $deleted ? 0 : (int) $this->likes_count,
             'comments_count' => $deleted ? 0 : (int) ($this->comments_count ?? 0),
@@ -106,8 +111,13 @@ class PostResource extends JsonResource
                     ] : null,
                 ];
             }),
-            'quiz' => $this->whenLoaded('quiz', function () use ($deleted) {
+            'quiz' => $this->whenLoaded('quiz', function () use ($deleted, $userId) {
                 if ($deleted) return null;
+
+                $myAttempt = $userId
+                    ? $this->quiz->attempts()->where('user_id', $userId)->first()
+                    : null;
+
                 return [
                     'id' => $this->quiz->id,
                     'title' => $this->quiz->title,
@@ -115,6 +125,11 @@ class PostResource extends JsonResource
                     'show_results_immediately' => $this->quiz->show_results_immediately,
                     'allow_retake' => $this->quiz->allow_retake,
                     'time_limit_seconds' => $this->quiz->time_limit_seconds,
+                    'my_attempt' => $myAttempt ? [
+                        'score' => (int) $myAttempt->score,
+                        'total_questions' => (int) $myAttempt->total_questions,
+                        'created_at' => $myAttempt->created_at?->toISOString(),
+                    ] : null,
                     'questions' => $this->quiz->questions->map(fn ($q) => [
                         'id' => $q->id,
                         'question' => $q->question,

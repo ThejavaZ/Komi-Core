@@ -30,6 +30,8 @@ class Post extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $with = ['images'];
+
     protected static function booted(): void
     {
         static::addGlobalScope(new ContentVisibilityScope);
@@ -117,5 +119,10 @@ class Post extends Model
     public function question(): HasOne
     {
         return $this->hasOne(Question::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(PostImages::class)->orderBy('position');
     }
 }

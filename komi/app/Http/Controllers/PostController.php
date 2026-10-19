@@ -6,12 +6,14 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
 use App\Models\Post;
+use App\Models\PostImages;
 use App\Models\Reaction;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -85,6 +87,17 @@ class PostController extends Controller
             $imageUrl = $request->file('image')->store('posts', 'public');
         }
 
+        $galleryPaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $galleryPaths[] = $file->store('posts', 'public');
+            }
+
+            if ($imageUrl === null) {
+                $imageUrl = $galleryPaths[0];
+            }
+        }
+
         if (!empty($data['poll_options']) && is_array($data['poll_options'])) {
             $type = 'poll';
         } elseif (!empty($data['quiz_questions'])) {
@@ -102,6 +115,13 @@ class PostController extends Controller
             'image_url' => $imageUrl,
             'link_url' => $data['link_url'] ?? null,
         ]);
+
+        foreach ($galleryPaths as $index => $path) {
+            $post->images()->create([
+                'url' => $path,
+                'position' => $index,
+            ]);
+        }
 
         // ── Structured content creation ──────────────────────────────
 
@@ -175,7 +195,7 @@ class PostController extends Controller
             $post->tags()->sync($tagIds);
         }
 
-        $post->load(['user', 'community', 'pollOptions', 'tags', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
+        $post->load(['user', 'community', 'pollOptions', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
         $post->is_liked_by_me = false;
 
         return (new PostResource($post))->additional([
@@ -212,11 +232,78 @@ class PostController extends Controller
 
         $post->save();
 
-        $post->load(['user', 'community', 'tags', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
+        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
 
         return (new PostResource($post))->additional([
             'status' => 'success',
             'message' => 'Publicación actualizada.',
+        ]);
+    }
+
+    public function addImages(Request $request, Post $post): PostResource
+    {
+        if ($post->user_id !== $request->user()->id) {
+            abort(403, 'No tienes permiso para editar esta publicación.');
+        }
+
+        $data = $request->validate([
+            'images' => ['required', 'array', 'max:5'],
+            'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+        ]);
+
+        $existing = $post->images()->count();
+
+        if ($existing + count($data['images']) > 5) {
+            abort(422, 'Máximo 5 imágenes por publicación.');
+        }
+
+        foreach ($data['images'] as $index => $file) {
+            $post->images()->create([
+                'url' => $file->store('posts', 'public'),
+                'position' => $existing + $index,
+            ]);
+        }
+
+        if ($post->image_url === null) {
+            $post->image_url = $post->images()->orderBy('position')->first()?->url;
+            $post->save();
+        }
+
+        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question'])->loadCount('comments');
+
+        return (new PostResource($post))->additional([
+            'status' => 'success',
+            'message' => 'Imágenes agregadas.',
+        ]);
+    }
+
+    public function removeImage(Request $request, Post $post, PostImages $image): JsonResponse
+    {
+        if ($post->user_id !== $request->user()->id) {
+            abort(403, 'No tienes permiso para editar esta publicación.');
+        }
+
+        if ($image->post_id !== $post->id) {
+            abort(404, 'La imagen no pertenece a esta publicación.');
+        }
+
+        Storage::disk('public')->delete($image->url);
+
+        if ($post->image_url === $image->url) {
+            $next = $post->images()
+                ->whereKeyNot($image->id)
+                ->orderBy('position')
+                ->first();
+
+            $post->image_url = $next?->url;
+            $post->save();
+        }
+
+        $image->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Imagen eliminada.',
         ]);
     }
 

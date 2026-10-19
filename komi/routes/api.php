@@ -11,6 +11,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RepostController;
 use App\Http\Controllers\SocialAuthController;
@@ -71,6 +72,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Editar una publicacion
     Route::put('/posts/{post}', [PostController::class, 'update']);
 
+    // Galeria de imagenes de una publicacion
+    Route::post('/posts/{post}/images', [PostController::class, 'addImages'])->middleware('throttle:posts-write');
+    Route::delete('/posts/{post}/images/{image}', [PostController::class, 'removeImage']);
+
     // Dar / quitar like a una publicacion
     Route::post('/posts/{post}/like', [PostController::class, 'toggleLike'])->middleware('throttle:likes');
 
@@ -79,6 +84,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Upvote / Downvote / Remove vote
     Route::post('/posts/{post}/vote', [VoteController::class, 'vote']);
+
+    // Quizzes: intentos, puntuacion y leaderboard
+    Route::post('/quizzes/{quiz}/attempt', [QuizAttemptController::class, 'attempt']);
+    Route::get('/quizzes/{quiz}/leaderboard', [QuizAttemptController::class, 'leaderboard']);
+    Route::get('/quizzes/{quiz}/me', [QuizAttemptController::class, 'myAttempt']);
 
     // Toggle bookmark (guardar publicacion)
     Route::post('/posts/{post}/bookmark', [BookmarkController::class, 'toggle']);
