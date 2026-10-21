@@ -99,7 +99,7 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => '¡Cuenta verificada y activada con éxito!',
             'token' => $token,
-            'user' => new UserResource($user),
+            'user' => new UserResource($user->load('badges')),
         ], 200);
     }
 
@@ -171,6 +171,7 @@ class AuthController extends Controller
 
         // Generar token normal si todo está en orden
         $token = $user->createToken('auth_token')->plainTextToken;
+        $user->load('badges');
 
         return response()->json([
             'status' => 'success',

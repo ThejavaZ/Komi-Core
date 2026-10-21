@@ -17,6 +17,7 @@ class StorePostRequest extends FormRequest
             'content' => ['required', 'string', 'max:5000'],
             'type' => ['nullable', 'string', 'in:text,image,poll,quiz,wiki,question,link,list,video'],
             'community_id' => ['nullable', 'integer', 'exists:communities,id'],
+            'community_category_id' => ['nullable', 'integer', 'exists:community_categories,id'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'images' => ['nullable', 'array', 'max:5'],
             'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],

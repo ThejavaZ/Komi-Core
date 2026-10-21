@@ -138,6 +138,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/blocked', [BlockController::class, 'blockedUsers']);
     Route::get('/users/{username}', [UserController::class, 'show']);
     Route::get('/users/{user}/posts', [UserController::class, 'userPosts']);
+    Route::get('/users/{user}/stats', [UserController::class, 'stats']);
 
     // ─── Seguidores ───────────────────────────────────────────
     Route::post('/users/{user}/follow', [FollowerController::class, 'toggleFollow']);
@@ -178,6 +179,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/communities/{community}/leave', [CommunityController::class, 'leave']);
     Route::get('/communities/{community}/members', [CommunityController::class, 'members']);
     Route::delete('/communities/{community}/members/{user}', [CommunityController::class, 'removeMember']);
+    Route::put('/communities/{community}/members/{user}/role', [CommunityController::class, 'updateRole']);
+
+    // ─── Categorías (flairs) de comunidad ───────────────────
+    Route::get('/communities/{community}/categories', [\App\Http\Controllers\CommunityCategoryController::class, 'index']);
+    Route::post('/communities/{community}/categories', [\App\Http\Controllers\CommunityCategoryController::class, 'store']);
+    Route::put('/communities/{community}/categories/{category}', [\App\Http\Controllers\CommunityCategoryController::class, 'update']);
+    Route::delete('/communities/{community}/categories/{category}', [\App\Http\Controllers\CommunityCategoryController::class, 'destroy']);
+
+    // ─── Eventos de comunidad ───────────────────────────────
+    Route::get('/communities/{community}/events', [\App\Http\Controllers\CommunityEventController::class, 'index']);
+    Route::post('/communities/{community}/events', [\App\Http\Controllers\CommunityEventController::class, 'store']);
+    Route::put('/communities/{community}/events/{event}', [\App\Http\Controllers\CommunityEventController::class, 'update']);
+    Route::delete('/communities/{community}/events/{event}', [\App\Http\Controllers\CommunityEventController::class, 'destroy']);
+
+    // ─── Retos (challenges) de comunidad ────────────────────
+    Route::get('/communities/{community}/challenges', [\App\Http\Controllers\CommunityChallengeController::class, 'index']);
+    Route::post('/communities/{community}/challenges', [\App\Http\Controllers\CommunityChallengeController::class, 'store']);
+    Route::put('/communities/{community}/challenges/{challenge}', [\App\Http\Controllers\CommunityChallengeController::class, 'update']);
+    Route::delete('/communities/{community}/challenges/{challenge}', [\App\Http\Controllers\CommunityChallengeController::class, 'destroy']);
+    Route::post('/communities/{community}/challenges/{challenge}/join', [\App\Http\Controllers\CommunityChallengeController::class, 'join']);
+    Route::post('/communities/{community}/challenges/{challenge}/leave', [\App\Http\Controllers\CommunityChallengeController::class, 'leave']);
 
     // ─── Salas de chat por comunidad ────────────────────────
     Route::get('/communities/{community}/rooms', [\App\Http\Controllers\CommunityRoomController::class, 'index']);

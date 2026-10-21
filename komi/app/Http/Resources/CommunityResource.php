@@ -16,7 +16,9 @@ class CommunityResource extends JsonResource
             'description' => $this->description,
             'avatar' => $this->avatar,
             'banner' => $this->banner,
+            'theme_color' => $this->theme_color,
             'owner' => new UserResource($this->whenLoaded('owner')),
+            'categories' => CommunityCategoryResource::collection($this->whenLoaded('categories')),
             'members_count' => $this->whenCounted('members'),
             'posts_count' => $this->whenCounted('posts'),
             'is_member' => $this->when(

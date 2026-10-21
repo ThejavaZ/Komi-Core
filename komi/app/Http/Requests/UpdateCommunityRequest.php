@@ -18,6 +18,7 @@ class UpdateCommunityRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string', 'max:500'],
             'avatar' => ['sometimes', 'nullable', 'url', 'max:2048'],
             'banner' => ['sometimes', 'nullable', 'url', 'max:2048'],
+            'theme_color' => ['sometimes', 'required', 'string', \Illuminate\Validation\Rule::in(['deepPurple', 'blue', 'emerald', 'crimson', 'amber'])],
         ];
     }
 }

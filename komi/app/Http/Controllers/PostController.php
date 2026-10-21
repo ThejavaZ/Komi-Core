@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Models\PostImages;
 use App\Models\Reaction;
 use App\Models\Tag;
+use App\Support\BadgeAwarder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,7 +23,7 @@ class PostController extends Controller
         $perPage = min((int) $request->input('per_page', 15), 50);
 
         $posts = Post::query()
-            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
+            ->with(['user', 'community', 'communityCategory', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
             ->orderByDesc('is_featured')
@@ -46,7 +47,7 @@ class PostController extends Controller
                     ->from('followers')
                     ->where('follower_id', $request->user()->id);
             })
-            ->with(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
+            ->with(['user', 'community', 'communityCategory', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
             ->orderByDesc('is_featured')
@@ -62,7 +63,7 @@ class PostController extends Controller
      */
     public function show(Request $request, Post $post): PostResource
     {
-        $post->load(['user', 'community', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
+        $post->load(['user', 'community', 'communityCategory', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)]);
 
@@ -79,6 +80,16 @@ class PostController extends Controller
             if (!$community || !$community->members()->where('users.id', $request->user()->id)->exists()) {
                 abort(403, 'Debes ser miembro de la comunidad para publicar en ella.');
             }
+        }
+
+        // La categoria debe pertenecer a la misma comunidad del post
+        if (!empty($data['community_category_id'])) {
+            $category = \App\Models\CommunityCategory::find($data['community_category_id']);
+            abort_unless(
+                $category && (int) $category->community_id === (int) ($data['community_id'] ?? 0),
+                422,
+                'La categoría no pertenece a esa comunidad.'
+            );
         }
 
         $imageUrl = $data['image_url'] ?? null;
@@ -124,6 +135,7 @@ class PostController extends Controller
 
         $post = $request->user()->posts()->create([
             'community_id' => $data['community_id'] ?? null,
+            'community_category_id' => $data['community_category_id'] ?? null,
             'content' => $data['content'],
             'type' => $type,
             'image_url' => $imageUrl,
@@ -131,6 +143,8 @@ class PostController extends Controller
             'video_provider' => $video[0] ?? null,
             'video_id' => $video[1] ?? null,
         ]);
+
+        BadgeAwarder::award($request->user(), 'first_post');
 
         foreach ($galleryPaths as $index => $path) {
             $post->images()->create([
@@ -220,7 +234,7 @@ class PostController extends Controller
             $post->tags()->sync($tagIds);
         }
 
-        $post->load(['user', 'community', 'pollOptions', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
+        $post->load(['user', 'community', 'communityCategory', 'pollOptions', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
         $post->is_liked_by_me = false;
 
         return (new PostResource($post))->additional([
@@ -276,7 +290,7 @@ class PostController extends Controller
             }
         }
 
-        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
+        $post->load(['user', 'community', 'communityCategory', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
 
         return (new PostResource($post))->additional([
             'status' => 'success',
@@ -313,7 +327,7 @@ class PostController extends Controller
             $post->save();
         }
 
-        $post->load(['user', 'community', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
+        $post->load(['user', 'community', 'communityCategory', 'tags', 'images', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])->loadCount('comments');
 
         return (new PostResource($post))->additional([
             'status' => 'success',
@@ -401,6 +415,10 @@ class PostController extends Controller
                     \App\Models\AppNotification::TYPE_LIKE,
                     $post->id,
                 );
+
+                if ($post->likes_count >= 10) {
+                    BadgeAwarder::award($post->user, 'popular_post');
+                }
             }
         }
 

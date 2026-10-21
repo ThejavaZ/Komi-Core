@@ -26,6 +26,7 @@ class UserResource extends JsonResource
             'theme_color' => $this->theme_color,
             'gender' => $this->gender,
             'custom_title' => $this->custom_title,
+            'badges' => \App\Http\Resources\BadgeResource::collection($this->whenLoaded('badges')),
             'active_frame' => $this->when($this->active_frame_id !== null, fn () => [
                 'id' => $this->activeFrame->id,
                 'cosmetic_type' => $this->activeFrame->cosmetic_type,

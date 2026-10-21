@@ -162,7 +162,9 @@ class StoreController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Cosmético aplicado.',
-            'data' => (new UserResource($user->fresh()))->toArray($request),
+            // resolve() filtra los MissingValue (p.ej. badges no cargados),
+            // algo que toArray() directo no hace.
+            'data' => (new UserResource($user->fresh()))->resolve($request),
         ]);
     }
 }

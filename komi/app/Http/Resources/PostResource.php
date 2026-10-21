@@ -182,6 +182,11 @@ class PostResource extends JsonResource
                 'name' => $this->community->name,
                 'slug' => $this->community->slug,
             ] : null),
+            'category' => $this->whenLoaded('communityCategory', fn () => $this->communityCategory ? [
+                'id' => $this->communityCategory->id,
+                'name' => $this->communityCategory->name,
+                'color' => $this->communityCategory->color,
+            ] : null),
             'deleted' => $deleted,
             'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,

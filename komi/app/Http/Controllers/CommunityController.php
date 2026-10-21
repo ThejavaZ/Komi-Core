@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCommunityRequest;
 use App\Http\Requests\UpdateCommunityRequest;
 use App\Http\Resources\CommunityResource;
 use App\Models\Community;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -44,6 +45,8 @@ class CommunityController extends Controller
         // Owner se une como miembro con rol owner
         $community->members()->attach($request->user()->id, ['role' => 'owner']);
 
+        \App\Support\BadgeAwarder::award($request->user(), 'community_founder');
+
         $community->loadCount(['posts', 'members']);
         $community->load('owner:id,name,username,avatar');
 
@@ -58,6 +61,7 @@ class CommunityController extends Controller
         $community->loadCount(['posts', 'members']);
         $community->load('owner:id,name,username,avatar');
         $community->load('members:id,name,username,avatar');
+        $community->load('categories');
 
         return new CommunityResource($community);
     }
@@ -68,9 +72,10 @@ class CommunityController extends Controller
     public function posts(Request $request, Community $community): AnonymousResourceCollection
     {
         $posts = $community->posts()
-            ->with(['user', 'community', 'tags', 'pollOptions', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
+            ->with(['user', 'community', 'communityCategory', 'tags', 'pollOptions', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question'])
             ->withCount('comments')
             ->withExists(['reactions as is_liked_by_me' => fn ($q) => $q->where('user_id', $request->user()->id)])
+            ->when($request->filled('category_id'), fn ($q) => $q->where('community_category_id', $request->integer('category_id')))
             ->latest()
             ->paginate(min((int) $request->input('per_page', 15), 50));
 
@@ -181,6 +186,52 @@ class CommunityController extends Controller
             'status' => 'success',
             'message' => 'Miembro expulsado.',
             'members_count' => $community->fresh()->members()->count(),
+        ]);
+    }
+
+    /**
+     * Cambia el rol de un miembro. Solo staff; jerarquía:
+     * - El rol del owner nunca cambia.
+     * - Un admin no puede modificar a otros admins (solo el owner).
+     */
+    public function updateRole(Request $request, Community $community, User $user): JsonResponse
+    {
+        $requester = $community->members()
+            ->where('users.id', $request->user()->id)
+            ->first();
+
+        if (!$requester || !in_array($requester->pivot->role, ['owner', 'admin'])) {
+            return response()->json(['message' => 'No tienes permiso para cambiar roles.'], 403);
+        }
+
+        $target = $community->members()->where('users.id', $user->id)->first();
+        if (!$target) {
+            return response()->json(['message' => 'El usuario no es miembro de esta comunidad.'], 404);
+        }
+
+        $data = $request->validate([
+            'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'member'])],
+        ]);
+
+        if ($target->pivot->role === 'owner') {
+            return response()->json(['message' => 'El rol del owner no se puede cambiar.'], 422);
+        }
+
+        if ($requester->pivot->role === 'admin' && $target->pivot->role === 'admin') {
+            return response()->json(['message' => 'Solo el owner puede modificar a otros admins.'], 403);
+        }
+
+        $community->members()->updateExistingPivot($user->id, ['role' => $data['role']]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Rol actualizado.',
+            'member' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'role' => $data['role'],
+            ],
         ]);
     }
 }

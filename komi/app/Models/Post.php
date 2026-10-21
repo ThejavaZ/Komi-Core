@@ -15,6 +15,7 @@ use App\Models\Scopes\ContentVisibilityScope;
 #[Fillable([
     'user_id',
     'community_id',
+    'community_category_id',
     'content',
     'type',
     'image_url',
@@ -62,6 +63,11 @@ class Post extends Model
     public function community(): BelongsTo
     {
         return $this->belongsTo(Community::class);
+    }
+
+    public function communityCategory(): BelongsTo
+    {
+        return $this->belongsTo(CommunityCategory::class, 'community_category_id');
     }
 
     public function comments(): HasMany

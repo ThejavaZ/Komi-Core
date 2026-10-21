@@ -19,6 +19,7 @@ class Community extends Model
         'avatar',
         'banner',
         'owner_id',
+        'theme_color',
     ];
 
     public function owner(): BelongsTo
@@ -29,6 +30,21 @@ class Community extends Model
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function categories(): HasMany
+    {
+        return $this->hasMany(CommunityCategory::class);
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(CommunityEvent::class);
+    }
+
+    public function challenges(): HasMany
+    {
+        return $this->hasMany(Challenge::class);
     }
 
     public function chatRooms(): HasMany

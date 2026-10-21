@@ -23,6 +23,7 @@ class UserController extends Controller
             'banner' => ['sometimes', 'nullable', 'url', 'max:2048'],
             'birth_date' => ['sometimes', 'nullable', 'date', 'before:today'],
             'gender' => ['sometimes', 'nullable', 'string', 'in:male,female,unspecified'],
+            'theme_color' => ['sometimes', 'required', 'string', \Illuminate\Validation\Rule::in(['deepPurple', 'blue', 'emerald', 'crimson', 'amber'])],
         ]);
 
         $request->user()->update($validated);
@@ -30,7 +31,7 @@ class UserController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Perfil actualizado correctamente.',
-            'user' => new UserResource($request->user()->loadCount(['followers', 'following', 'posts'])),
+            'user' => new UserResource($request->user()->load('badges')->loadCount(['followers', 'following', 'posts'])),
         ]);
     }
 
@@ -38,9 +39,64 @@ class UserController extends Controller
     {
         $user = User::where('username', $username)
             ->withCount(['followers', 'following', 'posts'])
+            ->with('badges')
             ->firstOrFail();
 
         return new UserResource($user);
+    }
+
+    /**
+     * Estadisticas publicas del usuario: totales, serie de posts
+     * de los ultimos 30 dias y top de posts (para la pantalla de graficas).
+     */
+    public function stats(int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+
+        $postsPerDay = $user->posts()
+            ->where('created_at', '>=', now()->subDays(29)->startOfDay())
+            ->get(['created_at'])
+            ->groupBy(fn ($post) => $post->created_at->format('Y-m-d'))
+            ->map(fn ($group) => $group->count());
+
+        $series = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $series[] = [
+                'date' => $date,
+                'count' => $postsPerDay[$date] ?? 0,
+            ];
+        }
+
+        $topPosts = $user->posts()
+            ->withCount('comments')
+            ->orderByDesc('likes_count')
+            ->limit(5)
+            ->get()
+            ->map(fn ($post) => [
+                'id' => $post->id,
+                'content' => \Illuminate\Support\Str::limit($post->content, 120),
+                'type' => $post->type,
+                'likes_count' => $post->likes_count,
+                'comments_count' => $post->comments_count,
+                'created_at' => $post->created_at?->toISOString(),
+            ]);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'totals' => [
+                    'posts' => $user->posts()->count(),
+                    'comments' => $user->comments()->count(),
+                    'likes_received' => (int) $user->posts()->sum('likes_count'),
+                    'followers' => $user->followers()->count(),
+                    'following' => $user->following()->count(),
+                    'communities' => $user->communities()->count(),
+                ],
+                'posts_last_30_days' => $series,
+                'top_posts' => $topPosts,
+            ],
+        ]);
     }
 
     public function userPosts(Request $request, int $id): \Illuminate\Http\Resources\Json\AnonymousResourceCollection

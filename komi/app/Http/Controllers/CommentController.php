@@ -69,6 +69,10 @@ class CommentController extends Controller
 
         $comment->load('user');
 
+        if ($request->user()->comments()->count() >= 10) {
+            \App\Support\BadgeAwarder::award($request->user(), 'commenter');
+        }
+
         if ($post->user) {
             \App\Models\AppNotification::notify(
                 $post->user,
