@@ -25,10 +25,21 @@ class PostController extends Controller
     {
         $perPage = min((int) $request->input('per_page', 15), 50);
 
-        $posts = Post::query()
-            ->with(['user', 'community', 'communityCategory', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership'])
+        $query = Post::query()
+            ->with(['user', 'community', 'communityCategory', 'pollOptions', 'tags', 'originalPost.user', 'quiz.questions.answers', 'wiki', 'question', 'listItems', 'viewerMembership', 'images'])
             ->withCount('comments')
-            ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)])
+            ->withExists(['reactions as is_liked_by_me' => fn ($query) => $query->where('user_id', $request->user()->id)]);
+
+        // Modo galería: solo posts con imagen (estilo Instagram/Pinterest).
+        if ($request->input('mode') === 'gallery') {
+            $query->where(function ($q) {
+                $q->where('type', 'image')
+                    ->orWhereNotNull('image_url')
+                    ->orWhereHas('images');
+            });
+        }
+
+        $posts = $query
             ->orderByDesc('is_featured')
             ->orderByDesc('is_pinned')
             ->latest()

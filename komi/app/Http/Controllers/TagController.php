@@ -17,11 +17,28 @@ class TagController extends Controller
     public function trending(Request $request): AnonymousResourceCollection
     {
         $limit = min((int) $request->input('limit', 10), 50);
+        $window = $request->input('window'); // '7d' | '30d' | null (histórico)
+        $communityId = $request->input('community_id');
 
-        $tags = Tag::withCount('posts')
+        // SQLite no permite HAVING sobre el alias de withCount (subquery):
+        // pedimos un poco más y filtramos en colección.
+        $tags = Tag::query()
+            ->withCount(['posts' => function ($query) use ($window, $communityId) {
+                if ($window === '7d') {
+                    $query->where('posts.created_at', '>=', now()->subDays(7));
+                } elseif ($window === '30d') {
+                    $query->where('posts.created_at', '>=', now()->subDays(30));
+                }
+                if ($communityId !== null && $communityId !== '') {
+                    $query->where('posts.community_id', (int) $communityId);
+                }
+            }])
             ->orderByDesc('posts_count')
-            ->limit($limit)
-            ->get();
+            ->limit($limit * 2)
+            ->get()
+            ->filter(fn ($tag) => $tag->posts_count > 0)
+            ->take($limit)
+            ->values();
 
         return TagResource::collection($tags);
     }
