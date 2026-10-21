@@ -20,6 +20,7 @@ class Community extends Model
         'banner',
         'owner_id',
         'theme_color',
+        'bulletin',
     ];
 
     public function owner(): BelongsTo

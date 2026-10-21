@@ -35,6 +35,38 @@ class UserController extends Controller
         ]);
     }
 
+    /**
+     * Borrado de cuenta self-serve (requisito estricto de Play Store).
+     * Anonimiza los datos personales, revoca tokens y soft-deleta el usuario.
+     */
+    public function destroyAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Revocamos todos los tokens activos de la cuenta.
+        $user->tokens()->delete();
+
+        // Anonimizamos PII conservando la integridad de las FK y la unicidad.
+        $user->forceFill([
+            'name' => 'Usuario eliminado',
+            'username' => 'user_deleted_' . $user->id,
+            'email' => 'deleted_' . $user->id . '@komi.invalid',
+            'bio' => null,
+            'avatar' => null,
+            'banner' => null,
+            'custom_title' => null,
+            'theme_color' => 'deepPurple',
+            'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(40)),
+        ])->save();
+
+        $user->delete(); // Soft delete: el contenido se conserva pero se oculta.
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Tu cuenta ha sido eliminada.',
+        ]);
+    }
+
     public function show(string $username): UserResource
     {
         $user = User::where('username', $username)

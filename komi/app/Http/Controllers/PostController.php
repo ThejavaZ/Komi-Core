@@ -18,6 +18,9 @@ use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
+    /** Límite "modo lento" anti-spam: máximo de posts por hora por usuario. */
+    public const MAX_POSTS_PER_HOUR = 15;
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $perPage = min((int) $request->input('per_page', 15), 50);
@@ -73,6 +76,14 @@ class PostController extends Controller
     public function store(StorePostRequest $request): PostResource
     {
         $data = $request->validated();
+
+        // Modo lento anti-spam: máximo de posts por hora.
+        $recentPosts = Post::where('user_id', $request->user()->id)
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        if ($recentPosts >= self::MAX_POSTS_PER_HOUR) {
+            abort(429, 'Has alcanzado el límite de ' . self::MAX_POSTS_PER_HOUR . ' publicaciones por hora. Intenta de nuevo más tarde.');
+        }
 
         // Validar membresia si postea en una comunidad
         if (!empty($data['community_id'])) {

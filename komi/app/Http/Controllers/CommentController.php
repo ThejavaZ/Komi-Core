@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 
 class CommentController extends Controller
 {
+    /** Límite "modo lento" anti-spam: máximo de comentarios por hora por usuario. */
+    public const MAX_COMMENTS_PER_HOUR = 30;
+
     /**
      * Display the comments of the given post with their author loaded.
      */
@@ -45,6 +48,17 @@ class CommentController extends Controller
      */
     public function store(StoreCommentRequest $request, Post $post): JsonResponse
     {
+        // Modo lento anti-spam: máximo de comentarios por hora.
+        $recentComments = Comment::where('user_id', $request->user()->id)
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        if ($recentComments >= self::MAX_COMMENTS_PER_HOUR) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Has alcanzado el límite de ' . self::MAX_COMMENTS_PER_HOUR . ' comentarios por hora. Intenta de nuevo más tarde.',
+            ], 429);
+        }
+
         $parentId = $request->validated('parent_id');
 
         if ($parentId !== null && ! Comment::whereKey($parentId)->where('post_id', $post->id)->exists()) {

@@ -159,12 +159,12 @@ class CommunityController extends Controller
     public function members(Community $community): AnonymousResourceCollection
     {
         $members = $community->members()
-            ->withPivot('role')
+            ->withPivot(['role', 'custom_title'])
             ->orderByPivot('role')
             ->orderBy('name')
             ->get();
 
-        return \App\Http\Resources\FollowerResource::collection($members);
+        return \App\Http\Resources\CommunityMemberResource::collection($members);
     }
 
     public function removeMember(Request $request, Community $community, int $userId): JsonResponse
@@ -231,6 +231,47 @@ class CommunityController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'role' => $data['role'],
+            ],
+        ]);
+    }
+
+    /**
+     * Otorga o retira un "placa"/título personal en la comunidad.
+     * Solo staff; no se puede titular al owner.
+     */
+    public function updateTitle(Request $request, Community $community, User $user): JsonResponse
+    {
+        $requester = $community->members()
+            ->where('users.id', $request->user()->id)
+            ->first();
+
+        if (!$requester || !in_array($requester->pivot->role, ['owner', 'admin'])) {
+            return response()->json(['message' => 'No tienes permiso para otorgar títulos.'], 403);
+        }
+
+        $target = $community->members()->where('users.id', $user->id)->first();
+        if (!$target) {
+            return response()->json(['message' => 'El usuario no es miembro de esta comunidad.'], 404);
+        }
+
+        if ($target->pivot->role === 'owner') {
+            return response()->json(['message' => 'No se puede poner un título al owner.'], 422);
+        }
+
+        $data = $request->validate([
+            'custom_title' => ['present', 'nullable', 'string', 'max:30'],
+        ]);
+
+        $community->members()->updateExistingPivot($user->id, [
+            'custom_title' => $data['custom_title'] ?: null,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $data['custom_title'] ? 'Título otorgado.' : 'Título retirado.',
+            'member' => [
+                'id' => $user->id,
+                'custom_title' => $data['custom_title'] ?: null,
             ],
         ]);
     }

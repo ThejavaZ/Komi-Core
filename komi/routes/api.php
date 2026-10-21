@@ -132,6 +132,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Actualizar el perfil del usuario autenticado
     Route::put('/user/profile', [UserController::class, 'updateProfile']);
 
+    // Borrado de cuenta (self-serve, requisito Play Store)
+    Route::delete('/user/account', [UserController::class, 'destroyAccount']);
+
     // ─── Perfil de usuario ───────────────────────────────────
     Route::get('/users/search', [UserController::class, 'search']);
     // Debe ir antes de /users/{username}, si no casaria con el patron.
@@ -180,6 +183,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/communities/{community}/members', [CommunityController::class, 'members']);
     Route::delete('/communities/{community}/members/{user}', [CommunityController::class, 'removeMember']);
     Route::put('/communities/{community}/members/{user}/role', [CommunityController::class, 'updateRole']);
+    Route::put('/communities/{community}/members/{user}/title', [CommunityController::class, 'updateTitle']);
 
     // ─── Categorías (flairs) de comunidad ───────────────────
     Route::get('/communities/{community}/categories', [\App\Http\Controllers\CommunityCategoryController::class, 'index']);
