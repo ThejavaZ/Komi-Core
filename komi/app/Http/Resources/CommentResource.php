@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\Xp;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -33,6 +34,7 @@ class CommentResource extends JsonResource
                 'username' => $this->user->username,
                 'avatar_url' => $this->user->avatar,
                 'is_verified' => (bool) $this->user->is_verified,
+                'level' => Xp::levelFor((int) $this->user->xp),
             ] : null),
             'replies' => CommentResource::collection($this->whenLoaded('replies')),
         ];

@@ -24,6 +24,7 @@ class UserResource extends JsonResource
             'xp' => (int) $this->xp,
             'level' => Xp::levelFor((int) $this->xp),
             'level_name' => Xp::levelName(Xp::levelFor((int) $this->xp)),
+            'xp_progress' => Xp::progress((int) $this->xp),
             'bio' => $this->bio,
             'avatar' => $this->avatar,
             'banner' => $this->banner,

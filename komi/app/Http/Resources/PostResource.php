@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Bookmark;
+use App\Models\CommunityUser;
 use App\Models\PollVote;
+use App\Models\Post;
 use App\Models\Vote;
+use App\Support\Xp;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -53,13 +57,13 @@ class PostResource extends JsonResource
         if ($userId && ! $deleted) {
             $isBookmarked = $this->relationLoaded('bookmarks')
                 ? $this->bookmarks->contains('user_id', $userId)
-                : \App\Models\Bookmark::where('user_id', $userId)->where('post_id', $this->id)->exists();
+                : Bookmark::where('user_id', $userId)->where('post_id', $this->id)->exists();
         }
 
         // Repost data
         $isReposted = false;
         if ($userId && ! $deleted) {
-            $isReposted = \App\Models\Post::where('user_id', $userId)
+            $isReposted = Post::where('user_id', $userId)
                 ->where('original_post_id', $this->id)
                 ->where('type', 'repost')
                 ->exists();
@@ -102,6 +106,7 @@ class PostResource extends JsonResource
                 if ($this->originalPost === null || $this->originalPost->trashed()) {
                     return null;
                 }
+
                 return [
                     'id' => $this->originalPost->id,
                     'content' => $this->originalPost->content,
@@ -121,7 +126,9 @@ class PostResource extends JsonResource
                 ];
             }),
             'quiz' => $this->whenLoaded('quiz', function () use ($deleted, $userId) {
-                if ($deleted) return null;
+                if ($deleted) {
+                    return null;
+                }
 
                 $myAttempt = $userId
                     ? $this->quiz->attempts()->where('user_id', $userId)->first()
@@ -152,7 +159,10 @@ class PostResource extends JsonResource
                 ];
             }),
             'wiki' => $this->whenLoaded('wiki', function () use ($deleted) {
-                if ($deleted) return null;
+                if ($deleted) {
+                    return null;
+                }
+
                 return [
                     'id' => $this->wiki->id,
                     'title' => $this->wiki->title,
@@ -165,7 +175,10 @@ class PostResource extends JsonResource
                 ];
             }),
             'question' => $this->whenLoaded('question', function () use ($deleted) {
-                if ($deleted) return null;
+                if ($deleted) {
+                    return null;
+                }
+
                 return [
                     'id' => $this->question->id,
                     'is_solved' => $this->question->is_solved,
@@ -196,6 +209,7 @@ class PostResource extends JsonResource
                 'username' => $deleted ? 'usuario_eliminado' : $this->user->username,
                 'avatar_url' => $deleted ? null : $this->user->avatar,
                 'is_verified' => $deleted ? false : (bool) $this->user->is_verified,
+                'level' => $deleted ? null : Xp::levelFor((int) $this->user->xp),
             ] : null),
             'author_id' => $deleted ? null : $this->user_id,
             'poll' => $pollData,
@@ -220,7 +234,7 @@ class PostResource extends JsonResource
             return in_array($this->viewerMembership?->role, ['owner', 'admin'], true);
         }
 
-        return \App\Models\CommunityUser::query()
+        return CommunityUser::query()
             ->where('community_id', $this->community_id)
             ->where('user_id', $userId)
             ->whereIn('role', ['owner', 'admin'])

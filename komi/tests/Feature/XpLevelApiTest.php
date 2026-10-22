@@ -169,6 +169,29 @@ class XpLevelApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.xp', 200)
             ->assertJsonPath('data.level', 3)
-            ->assertJsonPath('data.level_name', 'Explorador');
+            ->assertJsonPath('data.level_name', 'Explorador')
+            ->assertJsonPath('data.xp_progress.level', 3)
+            ->assertJsonPath('data.xp_progress.percent', 0);
+    }
+
+    public function test_post_and_comment_payloads_include_author_level(): void
+    {
+        $author = User::factory()->create();
+        $author->forceFill(['xp' => 200])->save();
+        $post = $author->posts()->create(['content' => 'Post de nivel 3']);
+        $author->comments()->create([
+            'post_id' => $post->id,
+            'content' => 'Comentario de nivel 3',
+        ]);
+
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->getJson('/api/posts')
+            ->assertOk()
+            ->assertJsonPath('data.0.user.level', 3);
+
+        $this->getJson("/api/posts/{$post->id}/comments")
+            ->assertOk()
+            ->assertJsonPath('data.0.user.level', 3);
     }
 }
