@@ -73,7 +73,7 @@ class ConversationController extends Controller
      */
     public function show(Request $request, Conversation $conversation): ConversationResource|JsonResponse
     {
-        if (! $conversation->isParticipant($request->user())) {
+        if (! $conversation->canBeAccessedBy($request->user())) {
             return response()->json(['message' => 'No formas parte de esta conversación.'], 403);
         }
 
@@ -108,7 +108,7 @@ class ConversationController extends Controller
      */
     public function messages(Request $request, Conversation $conversation): AnonymousResourceCollection|JsonResponse
     {
-        if (! $conversation->isParticipant($request->user())) {
+        if (! $conversation->canBeAccessedBy($request->user())) {
             return response()->json(['message' => 'No formas parte de esta conversación.'], 403);
         }
 

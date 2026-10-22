@@ -121,6 +121,12 @@ class PostController extends Controller
             $imageUrl = $request->file('image')->store('posts', 'public');
         }
 
+        // Audio de fondo del post (pistas cortas: mp3/aac/m4a/ogg/wav ≤ 5MB).
+        $audioUrl = null;
+        if ($request->hasFile('audio')) {
+            $audioUrl = $request->file('audio')->store('posts-audio', 'public');
+        }
+
         $galleryPaths = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
@@ -160,7 +166,9 @@ class PostController extends Controller
             'community_category_id' => $data['community_category_id'] ?? null,
             'content' => $data['content'],
             'type' => $type,
+            'ama_status' => $type === 'ama' ? 'open' : null,
             'image_url' => $imageUrl,
+            'audio_url' => $audioUrl,
             'link_url' => $data['link_url'] ?? null,
             'video_provider' => $video[0] ?? null,
             'video_id' => $video[1] ?? null,
@@ -464,6 +472,31 @@ class PostController extends Controller
             'status' => 'success',
             'is_pinned' => $post->is_pinned,
             'message' => $post->is_pinned ? 'Publicación fijada.' : 'Publicación despinada.',
+        ]);
+    }
+
+    /**
+     * AMA: abrir o cerrar preguntas. Solo el anfitrión del post.
+     */
+    public function setAmaStatus(Request $request, Post $post): JsonResponse
+    {
+        if ($post->type !== 'ama') {
+            return response()->json(['message' => 'Esta publicación no es un AMA.'], 422);
+        }
+
+        if ($post->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Solo el anfitrión puede cambiar el estado del AMA.'], 403);
+        }
+
+        $data = $request->validate([
+            'ama_status' => ['required', 'string', \Illuminate\Validation\Rule::in(['open', 'closed'])],
+        ]);
+
+        $post->update(['ama_status' => $data['ama_status']]);
+
+        return response()->json([
+            'status' => 'success',
+            'ama_status' => $post->ama_status,
         ]);
     }
 

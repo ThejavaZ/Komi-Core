@@ -85,6 +85,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Destacar / quitar destaque (moderadores de la comunidad)
     Route::post('/posts/{post}/feature', [PostController::class, 'toggleFeature']);
 
+    // AMA: abrir/cerrar preguntas (solo el anfitrión)
+    Route::put('/posts/{post}/ama-status', [PostController::class, 'setAmaStatus']);
+
     // Upvote / Downvote / Remove vote
     Route::post('/posts/{post}/vote', [VoteController::class, 'vote']);
 
@@ -119,6 +122,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/comments/{comment}', [CommentController::class, 'update']);
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
     Route::post('/comments/{comment}/like', [CommentController::class, 'toggleLike']);
+
+    // AMA: marcar una pregunta como respondida (solo el anfitrión)
+    Route::post('/comments/{comment}/answer', [CommentController::class, 'markAnswered']);
 
     // Busqueda unificada (usuarios, posts, comunidades, hashtags)
     Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index']);
@@ -184,6 +190,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/communities/{community}/members/{user}', [CommunityController::class, 'removeMember']);
     Route::put('/communities/{community}/members/{user}/role', [CommunityController::class, 'updateRole']);
     Route::put('/communities/{community}/members/{user}/title', [CommunityController::class, 'updateTitle']);
+
+    // Modmail: canal miembro ↔ staff de la comunidad
+    Route::post('/communities/{community}/modmail', [\App\Http\Controllers\ModmailController::class, 'open']);
+    Route::get('/communities/{community}/modmail', [\App\Http\Controllers\ModmailController::class, 'threads']);
 
     // ─── Categorías (flairs) de comunidad ───────────────────
     Route::get('/communities/{community}/categories', [\App\Http\Controllers\CommunityCategoryController::class, 'index']);

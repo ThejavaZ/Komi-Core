@@ -13,6 +13,7 @@ class Conversation extends Model
     public const TYPE_DIRECT = 'direct';
     public const TYPE_GROUP = 'group';
     public const TYPE_ROOM = 'room';
+    public const TYPE_MODMAIL = 'modmail';
 
     protected $fillable = [
         'type',
@@ -52,6 +53,25 @@ class Conversation extends Model
     public function isParticipant(User $user): bool
     {
         return $this->users()->where('user_id', $user->id)->exists();
+    }
+
+    /**
+     * Acceso a la conversación: participantes siempre; en modmail también
+     * el staff (owner/admin) de la comunidad dueña del hilo.
+     */
+    public function canBeAccessedBy(User $user): bool
+    {
+        if ($this->isParticipant($user)) {
+            return true;
+        }
+
+        return $this->type === self::TYPE_MODMAIL
+            && $this->community_id !== null
+            && CommunityUser::query()
+                ->where('community_id', $this->community_id)
+                ->where('user_id', $user->id)
+                ->whereIn('role', ['owner', 'admin'])
+                ->exists();
     }
 
     public function isRoom(): bool

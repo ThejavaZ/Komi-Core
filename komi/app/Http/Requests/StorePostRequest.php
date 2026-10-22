@@ -15,10 +15,11 @@ class StorePostRequest extends FormRequest
     {
         return [
             'content' => ['required', 'string', 'max:5000'],
-            'type' => ['nullable', 'string', 'in:text,image,poll,quiz,wiki,question,link,list,video'],
+            'type' => ['nullable', 'string', 'in:text,image,poll,quiz,wiki,question,link,list,video,ama'],
             'community_id' => ['nullable', 'integer', 'exists:communities,id'],
             'community_category_id' => ['nullable', 'integer', 'exists:community_categories,id'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'audio' => ['nullable', 'file', 'mimes:mp3,m4a,aac,ogg,wav', 'max:5120'],
             'images' => ['nullable', 'array', 'max:5'],
             'images.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'image_url' => ['nullable', 'url', 'max:2048'],

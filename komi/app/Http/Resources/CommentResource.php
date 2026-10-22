@@ -17,6 +17,8 @@ class CommentResource extends JsonResource
         return [
             'id' => $this->id,
             'content' => $this->content,
+            'audio_url' => $this->audio_url,
+            'is_answered' => (bool) ($this->is_answered ?? false),
             'post_id' => $this->post_id,
             'parent_id' => $this->parent_id,
             'replies_count' => $this->when(isset($this->replies_count), (int) $this->replies_count),

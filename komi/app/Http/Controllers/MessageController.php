@@ -19,7 +19,7 @@ class MessageController extends Controller
     {
         $me = $request->user();
 
-        if (! $conversation->isParticipant($me)) {
+        if (! $conversation->canBeAccessedBy($me)) {
             return response()->json(['message' => 'No formas parte de esta conversación.'], 403);
         }
 
@@ -90,7 +90,7 @@ class MessageController extends Controller
     {
         $me = $request->user();
 
-        if (! $conversation->isParticipant($me)) {
+        if (! $conversation->canBeAccessedBy($me)) {
             return response()->json(['message' => 'No formas parte de esta conversación.'], 403);
         }
 

@@ -69,8 +69,10 @@ class PostResource extends JsonResource
             'id' => $this->id,
             'content' => $deleted ? 'Publicación no disponible' : $this->content,
             'type' => $deleted ? 'text' : ($this->type ?? 'text'),
+            'ama_status' => $deleted ? null : $this->ama_status,
             'media_url' => $deleted ? null : $this->image_url,
             'image_url' => $deleted ? null : $this->image_url,
+            'audio_url' => $deleted ? null : $this->audio_url,
             'images' => $deleted ? [] : $this->whenLoaded('images', fn () => $this->images->map(fn ($img) => [
                 'id' => $img->id,
                 'url' => $img->url,

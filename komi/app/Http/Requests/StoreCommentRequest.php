@@ -23,8 +23,9 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => ['required', 'string', 'max:2000'],
+            'content' => ['required_without:audio', 'nullable', 'string', 'max:2000'],
             'parent_id' => ['nullable', 'integer', 'exists:comments,id'],
+            'audio' => ['nullable', 'file', 'mimes:mp4,m4a,aac,mp3,ogg,wav', 'max:2048'],
         ];
     }
 }

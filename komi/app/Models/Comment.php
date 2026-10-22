@@ -15,6 +15,8 @@ use App\Models\Scopes\ContentVisibilityScope;
     'post_id',
     'parent_id',
     'content',
+    'audio_url',
+    'is_answered',
 ])]
 class Comment extends Model
 {

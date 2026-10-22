@@ -69,11 +69,17 @@ class CommentController extends Controller
         }
 
         $comment = DB::transaction(function () use ($request, $post, $parentId): Comment {
+            $audioUrl = null;
+            if ($request->hasFile('audio')) {
+                $audioUrl = $request->file('audio')->store('comments-audio', 'public');
+            }
+
             $comment = Comment::create([
                 'user_id' => $request->user()->id,
                 'post_id' => $post->id,
                 'parent_id' => $parentId,
                 'content' => $request->validated('content'),
+                'audio_url' => $audioUrl,
             ]);
 
             $post->increment('comments_count');
@@ -145,6 +151,30 @@ class CommentController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Comentario eliminado.',
+        ]);
+    }
+
+    /**
+     * AMA: marcar/desmarcar una pregunta como respondida. Solo el anfitrión
+     * del post AMA puede hacerlo.
+     */
+    public function markAnswered(Request $request, Comment $comment): JsonResponse
+    {
+        $post = $comment->post;
+
+        if (! $post || $post->type !== 'ama') {
+            return response()->json(['message' => 'Solo se pueden responder preguntas de un AMA.'], 422);
+        }
+
+        if ($post->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Solo el anfitrión del AMA puede marcar preguntas.'], 403);
+        }
+
+        $comment->update(['is_answered' => ! $comment->is_answered]);
+
+        return response()->json([
+            'status' => 'success',
+            'is_answered' => $comment->is_answered,
         ]);
     }
 
