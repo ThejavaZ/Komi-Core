@@ -46,7 +46,7 @@ class CommentController extends Controller
     /**
      * Store a newly created comment for the given post.
      */
-    public function store(StoreCommentRequest $request, Post $post): JsonResponse
+    public function store(StoreCommentRequest $request, Post $post, \App\Services\AutoModService $autoMod): JsonResponse
     {
         // Modo lento anti-spam: máximo de comentarios por hora.
         $recentComments = Comment::where('user_id', $request->user()->id)
@@ -57,6 +57,15 @@ class CommentController extends Controller
                 'status' => 'error',
                 'message' => 'Has alcanzado el límite de ' . self::MAX_COMMENTS_PER_HOUR . ' comentarios por hora. Intenta de nuevo más tarde.',
             ], 429);
+        }
+
+        // Automod: block/delete rechazan, flag crea reporte tras guardar.
+        $automodHit = $autoMod->check($request->validated('content') ?? '');
+        if ($automodHit && in_array($automodHit['action'], ['block', 'delete'], true)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tu comentario contiene contenido no permitido (automod).',
+            ], 422);
         }
 
         $parentId = $request->validated('parent_id');
@@ -88,6 +97,10 @@ class CommentController extends Controller
         });
 
         $comment->load('user');
+
+        if ($automodHit && $automodHit['action'] === 'flag') {
+            $autoMod->flag('App\\Models\\Comment', $comment->id, $automodHit['keyword'], $request->user()->id);
+        }
 
         if ($request->user()->comments()->count() >= 10) {
             \App\Support\BadgeAwarder::award($request->user(), 'commenter');

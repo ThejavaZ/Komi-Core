@@ -18,6 +18,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Pages públicas (requisito de publicación en Play Store / App Store).
+Route::get('/privacy', fn () => view('pages.privacy'))->name('privacy');
+Route::get('/store', fn () => view('pages.store'))->name('store');
+
 // Admin login/logout (fuera del middleware auth)
 Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.post');

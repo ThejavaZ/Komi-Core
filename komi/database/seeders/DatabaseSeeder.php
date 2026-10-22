@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ReportSeeder::class,
             AppealSeeder::class,
             AdminLogSeeder::class,
+            AutoModSeeder::class,
         ]);
     }
 }

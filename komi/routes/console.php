@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::job(new UnbanExpiredUsersJob)->everyMinute();
+
+// Backup diario de BD a las 03:00 (mysqldump/sqlite3; retenidos últimos 14).
+Schedule::command('backup:database')->dailyAt('03:00');

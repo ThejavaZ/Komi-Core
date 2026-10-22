@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ClientLogRequest;
+use App\Http\Requests\FeatureEventRequest;
 use App\Models\ClientLog;
+use App\Models\FeatureEvent;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class TelemetryController extends Controller
 {
@@ -49,5 +52,28 @@ class TelemetryController extends Controller
             'status' => 'success',
             'message' => 'Log registrado correctamente.',
         ], 201);
+    }
+
+    /**
+     * Registra el uso de una feature del cliente (post creado, chat abierto…).
+     * Upsert por nombre: solo incrementa el contador y refresca last_seen_at.
+     */
+    public function feature(FeatureEventRequest $request): JsonResponse
+    {
+        $feature = $request->validated('feature');
+
+        FeatureEvent::upsert(
+            [
+                'feature' => $feature,
+                'occurrences_count' => 1,
+                'last_seen_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            ['feature'],
+            ['occurrences_count' => DB::raw('occurrences_count + 1'), 'last_seen_at' => now(), 'updated_at' => now()]
+        );
+
+        return response()->json(['status' => 'success'], 201);
     }
 }

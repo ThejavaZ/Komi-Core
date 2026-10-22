@@ -84,7 +84,7 @@ class PostController extends Controller
         return new PostResource($post);
     }
 
-    public function store(StorePostRequest $request): PostResource
+    public function store(StorePostRequest $request, \App\Services\AutoModService $autoMod): PostResource
     {
         $data = $request->validated();
 
@@ -94,6 +94,12 @@ class PostController extends Controller
             ->count();
         if ($recentPosts >= self::MAX_POSTS_PER_HOUR) {
             abort(429, 'Has alcanzado el límite de ' . self::MAX_POSTS_PER_HOUR . ' publicaciones por hora. Intenta de nuevo más tarde.');
+        }
+
+        // Automod: block/delete rechazan, flag crea reporte tras guardar.
+        $automodHit = $autoMod->check($data['content'] ?? '');
+        if ($automodHit && in_array($automodHit['action'], ['block', 'delete'], true)) {
+            abort(422, 'Tu publicación contiene contenido no permitido (automod).');
         }
 
         // Validar membresia si postea en una comunidad
@@ -175,6 +181,10 @@ class PostController extends Controller
         ]);
 
         BadgeAwarder::award($request->user(), 'first_post');
+
+        if ($automodHit && $automodHit['action'] === 'flag') {
+            $autoMod->flag('App\\Models\\Post', $post->id, $automodHit['keyword'], $request->user()->id);
+        }
 
         foreach ($galleryPaths as $index => $path) {
             $post->images()->create([

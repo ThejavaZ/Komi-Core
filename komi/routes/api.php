@@ -43,6 +43,7 @@ Route::middleware('throttle:5,1')->post('/auth/social-login', [SocialAuthControl
 
 // Telemetria: recibe errores del cliente (Flutter), deduplicados por error_hash.
 Route::middleware('throttle:30,1')->post('/telemetry/logs', [TelemetryController::class, 'store']);
+Route::middleware('throttle:60,1')->post('/telemetry/features', [TelemetryController::class, 'feature']);
 
 // Tags trending (publico)
 Route::get('/tags/trending', [TagController::class, 'trending']);
