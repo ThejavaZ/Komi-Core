@@ -5,16 +5,23 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Http\Resources\PostResource;
+use App\Models\AppNotification;
+use App\Models\Community;
+use App\Models\CommunityCategory;
+use App\Models\CommunityUser;
 use App\Models\Post;
 use App\Models\PostImages;
 use App\Models\Reaction;
 use App\Models\Tag;
+use App\Services\AutoModService;
 use App\Support\BadgeAwarder;
+use App\Support\Xp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class PostController extends Controller
 {
@@ -84,7 +91,7 @@ class PostController extends Controller
         return new PostResource($post);
     }
 
-    public function store(StorePostRequest $request, \App\Services\AutoModService $autoMod): PostResource
+    public function store(StorePostRequest $request, AutoModService $autoMod): PostResource
     {
         $data = $request->validated();
 
@@ -93,7 +100,7 @@ class PostController extends Controller
             ->where('created_at', '>=', now()->subHour())
             ->count();
         if ($recentPosts >= self::MAX_POSTS_PER_HOUR) {
-            abort(429, 'Has alcanzado el límite de ' . self::MAX_POSTS_PER_HOUR . ' publicaciones por hora. Intenta de nuevo más tarde.');
+            abort(429, 'Has alcanzado el límite de '.self::MAX_POSTS_PER_HOUR.' publicaciones por hora. Intenta de nuevo más tarde.');
         }
 
         // Automod: block/delete rechazan, flag crea reporte tras guardar.
@@ -103,16 +110,16 @@ class PostController extends Controller
         }
 
         // Validar membresia si postea en una comunidad
-        if (!empty($data['community_id'])) {
-            $community = \App\Models\Community::find($data['community_id']);
-            if (!$community || !$community->members()->where('users.id', $request->user()->id)->exists()) {
+        if (! empty($data['community_id'])) {
+            $community = Community::find($data['community_id']);
+            if (! $community || ! $community->members()->where('users.id', $request->user()->id)->exists()) {
                 abort(403, 'Debes ser miembro de la comunidad para publicar en ella.');
             }
         }
 
         // La categoria debe pertenecer a la misma comunidad del post
-        if (!empty($data['community_category_id'])) {
-            $category = \App\Models\CommunityCategory::find($data['community_category_id']);
+        if (! empty($data['community_category_id'])) {
+            $category = CommunityCategory::find($data['community_category_id']);
             abort_unless(
                 $category && (int) $category->community_id === (int) ($data['community_id'] ?? 0),
                 422,
@@ -144,11 +151,11 @@ class PostController extends Controller
             }
         }
 
-        if (!empty($data['poll_options']) && is_array($data['poll_options'])) {
+        if (! empty($data['poll_options']) && is_array($data['poll_options'])) {
             $type = 'poll';
-        } elseif (!empty($data['quiz_questions'])) {
+        } elseif (! empty($data['quiz_questions'])) {
             $type = 'quiz';
-        } elseif (!empty($data['wiki_title'])) {
+        } elseif (! empty($data['wiki_title'])) {
             $type = 'wiki';
         } elseif ($type === 'video') {
             if (empty($data['link_url'])) {
@@ -159,9 +166,9 @@ class PostController extends Controller
             if ($parsed === null) {
                 abort(422, 'URL de video no soportada. Usa un enlace de YouTube o Vimeo.');
             }
-        } elseif (!empty($data['list_items'])) {
+        } elseif (! empty($data['list_items'])) {
             $type = 'list';
-        } elseif (!empty($data['link_url'])) {
+        } elseif (! empty($data['link_url'])) {
             $type = 'link';
         }
 
@@ -181,6 +188,7 @@ class PostController extends Controller
         ]);
 
         BadgeAwarder::award($request->user(), 'first_post');
+        Xp::award($request->user(), 'post.created');
 
         if ($automodHit && $automodHit['action'] === 'flag') {
             $autoMod->flag('App\\Models\\Post', $post->id, $automodHit['keyword'], $request->user()->id);
@@ -195,7 +203,7 @@ class PostController extends Controller
 
         // ── Structured content creation ──────────────────────────────
 
-        if ($type === 'poll' && !empty($data['poll_options'])) {
+        if ($type === 'poll' && ! empty($data['poll_options'])) {
             foreach ($data['poll_options'] as $optionText) {
                 $post->pollOptions()->create([
                     'option_text' => $optionText,
@@ -203,7 +211,7 @@ class PostController extends Controller
             }
         }
 
-        if ($type === 'quiz' && !empty($data['quiz_questions'])) {
+        if ($type === 'quiz' && ! empty($data['quiz_questions'])) {
             $quiz = $post->quiz()->create([
                 'title' => $data['quiz_title'] ?? 'Quiz',
                 'description' => $data['quiz_description'] ?? null,
@@ -226,7 +234,7 @@ class PostController extends Controller
             }
         }
 
-        if ($type === 'wiki' && !empty($data['wiki_title'])) {
+        if ($type === 'wiki' && ! empty($data['wiki_title'])) {
             $wiki = $post->wiki()->create([
                 'title' => $data['wiki_title'],
                 'community_id' => $data['community_id'] ?? null,
@@ -246,7 +254,7 @@ class PostController extends Controller
             ]);
         }
 
-        if ($type === 'list' && !empty($data['list_items'])) {
+        if ($type === 'list' && ! empty($data['list_items'])) {
             foreach ($data['list_items'] as $position => $text) {
                 $post->listItems()->create([
                     'position' => $position,
@@ -255,11 +263,12 @@ class PostController extends Controller
             }
         }
 
-        if (!empty($data['tags']) && is_array($data['tags'])) {
+        if (! empty($data['tags']) && is_array($data['tags'])) {
             $tagIds = collect($data['tags'])
                 ->map(function (string $tagName) {
                     $clean = strtolower(ltrim(trim($tagName), '#'));
                     $clean = preg_replace('/[^a-z0-9áéíóúñü_-]/u', '', $clean);
+
                     return $clean;
                 })
                 ->filter()
@@ -449,15 +458,19 @@ class PostController extends Controller
         if ($liked) {
             $post->loadMissing('user');
             if ($post->user) {
-                \App\Models\AppNotification::notify(
+                AppNotification::notify(
                     $post->user,
                     $request->user(),
-                    \App\Models\AppNotification::TYPE_LIKE,
+                    AppNotification::TYPE_LIKE,
                     $post->id,
                 );
 
                 if ($post->likes_count >= 10) {
                     BadgeAwarder::award($post->user, 'popular_post');
+                }
+
+                if ($post->user->id !== $request->user()->id) {
+                    Xp::award($post->user, 'like.received');
                 }
             }
         }
@@ -475,7 +488,7 @@ class PostController extends Controller
             abort(403, 'No tienes permiso para fijar esta publicación.');
         }
 
-        $post->is_pinned = !$post->is_pinned;
+        $post->is_pinned = ! $post->is_pinned;
         $post->save();
 
         return response()->json([
@@ -499,7 +512,7 @@ class PostController extends Controller
         }
 
         $data = $request->validate([
-            'ama_status' => ['required', 'string', \Illuminate\Validation\Rule::in(['open', 'closed'])],
+            'ama_status' => ['required', 'string', Rule::in(['open', 'closed'])],
         ]);
 
         $post->update(['ama_status' => $data['ama_status']]);
@@ -518,17 +531,17 @@ class PostController extends Controller
         $user = $request->user();
 
         $isModerator = $user->is_global_admin
-            || ($post->community_id && \App\Models\CommunityUser::query()
+            || ($post->community_id && CommunityUser::query()
                 ->where('community_id', $post->community_id)
                 ->where('user_id', $user->id)
                 ->whereIn('role', ['owner', 'admin'])
                 ->exists());
 
-        if (!$isModerator) {
+        if (! $isModerator) {
             abort(403, 'Solo los moderadores pueden destacar publicaciones.');
         }
 
-        $post->is_featured = !$post->is_featured;
+        $post->is_featured = ! $post->is_featured;
         $post->save();
 
         return response()->json([
@@ -554,7 +567,7 @@ class PostController extends Controller
         parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
 
         if (in_array($host, ['youtube.com', 'm.youtube.com', 'music.youtube.com'], true)) {
-            if (str_starts_with($path, '/watch') && !empty($query['v']) && preg_match('/^[\w-]{5,20}$/', $query['v'])) {
+            if (str_starts_with($path, '/watch') && ! empty($query['v']) && preg_match('/^[\w-]{5,20}$/', $query['v'])) {
                 return ['youtube', $query['v']];
             }
             if (preg_match('#^/shorts/([\w-]{5,20})#', $path, $m)) {

@@ -238,4 +238,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/checkin', [\App\Http\Controllers\DailyCheckinController::class, 'claim'])->middleware('throttle:checkin');
     Route::post('/users/{user}/tip', [\App\Http\Controllers\TipController::class, 'store'])->middleware('throttle:tips');
 
+    // ─── XP y niveles ──────────────────────────────────────
+    Route::get('/xp/summary', [\App\Http\Controllers\XpController::class, 'summary']);
+
 });

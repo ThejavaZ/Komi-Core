@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\Vote;
+use App\Support\Xp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,9 @@ class VoteController extends Controller
         $userId = $request->user()->id;
         $type = $request->input('type');
 
-        DB::transaction(function () use ($post, $userId, $type) {
+        $awardedUpvote = false;
+
+        DB::transaction(function () use ($post, $userId, $type, &$awardedUpvote) {
             $existingVote = Vote::query()
                 ->where('user_id', $userId)
                 ->where('post_id', $post->id)
@@ -58,8 +61,17 @@ class VoteController extends Controller
                     $delta = $type === 'upvote' ? 1 : -1;
                     $post->increment('vote_score', $delta);
                 }
+
+                $awardedUpvote = $type === 'upvote';
             }
         });
+
+        if ($awardedUpvote && $post->user_id !== $userId) {
+            $post->loadMissing('user');
+            if ($post->user) {
+                Xp::award($post->user, 'like.received');
+            }
+        }
 
         $post->refresh();
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\Xp;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,6 +23,11 @@ class CommunityMemberResource extends JsonResource
             'is_verified' => $this->is_verified,
             'role' => $this->pivot?->role ?? 'member',
             'custom_title' => $this->pivot?->custom_title,
+            'xp' => (int) ($this->xp ?? 0),
+            'level' => Xp::levelFor((int) ($this->xp ?? 0)),
+            'level_name' => Xp::levelName(
+                Xp::levelFor((int) ($this->xp ?? 0))
+            ),
         ];
     }
 }

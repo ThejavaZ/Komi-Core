@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Resources\CommentResource;
+use App\Models\AppNotification;
 use App\Models\Comment;
 use App\Models\CommentReaction;
 use App\Models\Post;
+use App\Services\AutoModService;
+use App\Support\BadgeAwarder;
+use App\Support\Xp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -46,7 +50,7 @@ class CommentController extends Controller
     /**
      * Store a newly created comment for the given post.
      */
-    public function store(StoreCommentRequest $request, Post $post, \App\Services\AutoModService $autoMod): JsonResponse
+    public function store(StoreCommentRequest $request, Post $post, AutoModService $autoMod): JsonResponse
     {
         // Modo lento anti-spam: máximo de comentarios por hora.
         $recentComments = Comment::where('user_id', $request->user()->id)
@@ -55,7 +59,7 @@ class CommentController extends Controller
         if ($recentComments >= self::MAX_COMMENTS_PER_HOUR) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Has alcanzado el límite de ' . self::MAX_COMMENTS_PER_HOUR . ' comentarios por hora. Intenta de nuevo más tarde.',
+                'message' => 'Has alcanzado el límite de '.self::MAX_COMMENTS_PER_HOUR.' comentarios por hora. Intenta de nuevo más tarde.',
             ], 429);
         }
 
@@ -103,14 +107,16 @@ class CommentController extends Controller
         }
 
         if ($request->user()->comments()->count() >= 10) {
-            \App\Support\BadgeAwarder::award($request->user(), 'commenter');
+            BadgeAwarder::award($request->user(), 'commenter');
         }
 
+        Xp::award($request->user(), 'comment.created');
+
         if ($post->user) {
-            \App\Models\AppNotification::notify(
+            AppNotification::notify(
                 $post->user,
                 $request->user(),
-                \App\Models\AppNotification::TYPE_COMMENT,
+                AppNotification::TYPE_COMMENT,
                 $post->id,
                 $comment->id,
             );
@@ -156,7 +162,7 @@ class CommentController extends Controller
         DB::transaction(function () use ($comment): void {
             $comment->delete();
             // Sin scopes: el contador debe bajar aunque el post este oculto al viewer.
-            \App\Models\Post::withoutGlobalScopes()
+            Post::withoutGlobalScopes()
                 ->whereKey($comment->post_id)
                 ->decrement('comments_count');
         });
@@ -224,13 +230,17 @@ class CommentController extends Controller
         if ($liked) {
             $comment->loadMissing('user');
             if ($comment->user) {
-                \App\Models\AppNotification::notify(
+                AppNotification::notify(
                     $comment->user,
                     $request->user(),
-                    \App\Models\AppNotification::TYPE_LIKE,
+                    AppNotification::TYPE_LIKE,
                     $comment->post_id,
                     $comment->id,
                 );
+
+                if ($comment->user->id !== $userId) {
+                    Xp::award($comment->user, 'like.received');
+                }
             }
         }
 

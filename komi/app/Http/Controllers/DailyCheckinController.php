@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Xp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -59,6 +60,7 @@ class DailyCheckinController extends Controller
             'last_checkin_at' => now()->toDateString(),
         ])->save();
         $user->increment('coins', $reward);
+        Xp::award($user, 'checkin.claimed');
 
         return response()->json([
             'status' => 'success',

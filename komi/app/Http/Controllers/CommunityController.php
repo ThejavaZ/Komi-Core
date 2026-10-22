@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCommunityRequest;
 use App\Http\Requests\UpdateCommunityRequest;
+use App\Http\Resources\CommunityMemberResource;
 use App\Http\Resources\CommunityResource;
+use App\Http\Resources\PostResource;
 use App\Models\Community;
 use App\Models\User;
+use App\Support\BadgeAwarder;
+use App\Support\Xp;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CommunityController extends Controller
 {
@@ -25,7 +30,7 @@ class CommunityController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -45,7 +50,8 @@ class CommunityController extends Controller
         // Owner se une como miembro con rol owner
         $community->members()->attach($request->user()->id, ['role' => 'owner']);
 
-        \App\Support\BadgeAwarder::award($request->user(), 'community_founder');
+        BadgeAwarder::award($request->user(), 'community_founder');
+        Xp::award($request->user(), 'community.created');
 
         $community->loadCount(['posts', 'members']);
         $community->load('owner:id,name,username,avatar');
@@ -79,7 +85,7 @@ class CommunityController extends Controller
             ->latest()
             ->paginate(min((int) $request->input('per_page', 15), 50));
 
-        return \App\Http\Resources\PostResource::collection($posts);
+        return PostResource::collection($posts);
     }
 
     public function update(UpdateCommunityRequest $request, Community $community): JsonResponse
@@ -88,7 +94,7 @@ class CommunityController extends Controller
 
         // Solo owner o admin pueden editar
         $member = $community->members()->where('users.id', $userId)->first();
-        if (!$member || !in_array($member->pivot->role, ['owner', 'admin'])) {
+        if (! $member || ! in_array($member->pivot->role, ['owner', 'admin'])) {
             return response()->json(['message' => 'No tienes permiso para editar esta comunidad.'], 403);
         }
 
@@ -139,7 +145,7 @@ class CommunityController extends Controller
     {
         $userId = $request->user()->id;
 
-        if (!$community->members()->where('users.id', $userId)->exists()) {
+        if (! $community->members()->where('users.id', $userId)->exists()) {
             return response()->json(['message' => 'No eres miembro de esta comunidad.'], 400);
         }
 
@@ -164,7 +170,7 @@ class CommunityController extends Controller
             ->orderBy('name')
             ->get();
 
-        return \App\Http\Resources\CommunityMemberResource::collection($members);
+        return CommunityMemberResource::collection($members);
     }
 
     public function removeMember(Request $request, Community $community, int $userId): JsonResponse
@@ -172,7 +178,7 @@ class CommunityController extends Controller
         $requesterId = $request->user()->id;
         $requester = $community->members()->where('users.id', $requesterId)->first();
 
-        if (!$requester || !in_array($requester->pivot->role, ['owner', 'admin'])) {
+        if (! $requester || ! in_array($requester->pivot->role, ['owner', 'admin'])) {
             return response()->json(['message' => 'No tienes permiso para expulsar miembros.'], 403);
         }
 
@@ -200,17 +206,17 @@ class CommunityController extends Controller
             ->where('users.id', $request->user()->id)
             ->first();
 
-        if (!$requester || !in_array($requester->pivot->role, ['owner', 'admin'])) {
+        if (! $requester || ! in_array($requester->pivot->role, ['owner', 'admin'])) {
             return response()->json(['message' => 'No tienes permiso para cambiar roles.'], 403);
         }
 
         $target = $community->members()->where('users.id', $user->id)->first();
-        if (!$target) {
+        if (! $target) {
             return response()->json(['message' => 'El usuario no es miembro de esta comunidad.'], 404);
         }
 
         $data = $request->validate([
-            'role' => ['required', 'string', \Illuminate\Validation\Rule::in(['admin', 'member'])],
+            'role' => ['required', 'string', Rule::in(['admin', 'member'])],
         ]);
 
         if ($target->pivot->role === 'owner') {
@@ -245,12 +251,12 @@ class CommunityController extends Controller
             ->where('users.id', $request->user()->id)
             ->first();
 
-        if (!$requester || !in_array($requester->pivot->role, ['owner', 'admin'])) {
+        if (! $requester || ! in_array($requester->pivot->role, ['owner', 'admin'])) {
             return response()->json(['message' => 'No tienes permiso para otorgar títulos.'], 403);
         }
 
         $target = $community->members()->where('users.id', $user->id)->first();
-        if (!$target) {
+        if (! $target) {
             return response()->json(['message' => 'El usuario no es miembro de esta comunidad.'], 404);
         }
 
