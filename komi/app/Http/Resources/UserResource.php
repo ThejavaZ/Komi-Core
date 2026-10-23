@@ -44,6 +44,7 @@ class UserResource extends JsonResource
             ]),
             'is_verified' => $this->is_verified,
             'is_premium' => $this->is_premium,
+            'is_global_admin' => $this->when($request->user()?->id === $this->id, fn () => (bool) $this->is_global_admin),
             'status' => $this->status,
             'followers_count' => $this->whenCounted('followers'),
             'following_count' => $this->whenCounted('following'),

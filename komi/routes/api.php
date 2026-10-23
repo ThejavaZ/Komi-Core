@@ -1,24 +1,36 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlockController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CommunityCategoryController;
+use App\Http\Controllers\CommunityChallengeController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\CommunityEventController;
+use App\Http\Controllers\CommunityRoomController;
 use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\DailyCheckinController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\ModmailController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PollController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RepostController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TelemetryController;
+use App\Http\Controllers\TipController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoteController;
+use App\Http\Controllers\WikiController;
+use App\Http\Controllers\XpController;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -98,11 +110,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/quizzes/{quiz}/me', [QuizAttemptController::class, 'myAttempt']);
 
     // Wikis: detalle, edicion versionada, historial y rollback
-    Route::get('/wikis/{wiki}', [\App\Http\Controllers\WikiController::class, 'show']);
-    Route::get('/wikis/{wiki}/versions', [\App\Http\Controllers\WikiController::class, 'versions']);
-    Route::get('/wikis/{wiki}/versions/{version}', [\App\Http\Controllers\WikiController::class, 'versionDetail']);
-    Route::put('/wikis/{wiki}', [\App\Http\Controllers\WikiController::class, 'update']);
-    Route::post('/wikis/{wiki}/rollback', [\App\Http\Controllers\WikiController::class, 'rollback']);
+    Route::get('/wikis/{wiki}', [WikiController::class, 'show']);
+    Route::get('/wikis/{wiki}/versions', [WikiController::class, 'versions']);
+    Route::get('/wikis/{wiki}/versions/{version}', [WikiController::class, 'versionDetail']);
+    Route::put('/wikis/{wiki}', [WikiController::class, 'update']);
+    Route::post('/wikis/{wiki}/rollback', [WikiController::class, 'rollback']);
 
     // Toggle bookmark (guardar publicacion)
     Route::post('/posts/{post}/bookmark', [BookmarkController::class, 'toggle']);
@@ -128,7 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comments/{comment}/answer', [CommentController::class, 'markAnswered']);
 
     // Busqueda unificada (usuarios, posts, comunidades, hashtags)
-    Route::get('/search', [\App\Http\Controllers\SearchController::class, 'index']);
+    Route::get('/search', [SearchController::class, 'index']);
 
     // Votar en una encuesta
     Route::post('/posts/{post}/poll/vote', [PollController::class, 'vote']);
@@ -193,52 +205,57 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/communities/{community}/members/{user}/title', [CommunityController::class, 'updateTitle']);
 
     // Modmail: canal miembro ↔ staff de la comunidad
-    Route::post('/communities/{community}/modmail', [\App\Http\Controllers\ModmailController::class, 'open']);
-    Route::get('/communities/{community}/modmail', [\App\Http\Controllers\ModmailController::class, 'threads']);
+    Route::post('/communities/{community}/modmail', [ModmailController::class, 'open']);
+    Route::get('/communities/{community}/modmail', [ModmailController::class, 'threads']);
 
     // ─── Categorías (flairs) de comunidad ───────────────────
-    Route::get('/communities/{community}/categories', [\App\Http\Controllers\CommunityCategoryController::class, 'index']);
-    Route::post('/communities/{community}/categories', [\App\Http\Controllers\CommunityCategoryController::class, 'store']);
-    Route::put('/communities/{community}/categories/{category}', [\App\Http\Controllers\CommunityCategoryController::class, 'update']);
-    Route::delete('/communities/{community}/categories/{category}', [\App\Http\Controllers\CommunityCategoryController::class, 'destroy']);
+    Route::get('/communities/{community}/categories', [CommunityCategoryController::class, 'index']);
+    Route::post('/communities/{community}/categories', [CommunityCategoryController::class, 'store']);
+    Route::put('/communities/{community}/categories/{category}', [CommunityCategoryController::class, 'update']);
+    Route::delete('/communities/{community}/categories/{category}', [CommunityCategoryController::class, 'destroy']);
 
     // ─── Eventos de comunidad ───────────────────────────────
-    Route::get('/communities/{community}/events', [\App\Http\Controllers\CommunityEventController::class, 'index']);
-    Route::post('/communities/{community}/events', [\App\Http\Controllers\CommunityEventController::class, 'store']);
-    Route::put('/communities/{community}/events/{event}', [\App\Http\Controllers\CommunityEventController::class, 'update']);
-    Route::delete('/communities/{community}/events/{event}', [\App\Http\Controllers\CommunityEventController::class, 'destroy']);
+    Route::get('/communities/{community}/events', [CommunityEventController::class, 'index']);
+    Route::post('/communities/{community}/events', [CommunityEventController::class, 'store']);
+    Route::put('/communities/{community}/events/{event}', [CommunityEventController::class, 'update']);
+    Route::delete('/communities/{community}/events/{event}', [CommunityEventController::class, 'destroy']);
 
     // ─── Retos (challenges) de comunidad ────────────────────
-    Route::get('/communities/{community}/challenges', [\App\Http\Controllers\CommunityChallengeController::class, 'index']);
-    Route::post('/communities/{community}/challenges', [\App\Http\Controllers\CommunityChallengeController::class, 'store']);
-    Route::put('/communities/{community}/challenges/{challenge}', [\App\Http\Controllers\CommunityChallengeController::class, 'update']);
-    Route::delete('/communities/{community}/challenges/{challenge}', [\App\Http\Controllers\CommunityChallengeController::class, 'destroy']);
-    Route::post('/communities/{community}/challenges/{challenge}/join', [\App\Http\Controllers\CommunityChallengeController::class, 'join']);
-    Route::post('/communities/{community}/challenges/{challenge}/leave', [\App\Http\Controllers\CommunityChallengeController::class, 'leave']);
+    Route::get('/communities/{community}/challenges', [CommunityChallengeController::class, 'index']);
+    Route::post('/communities/{community}/challenges', [CommunityChallengeController::class, 'store']);
+    Route::put('/communities/{community}/challenges/{challenge}', [CommunityChallengeController::class, 'update']);
+    Route::delete('/communities/{community}/challenges/{challenge}', [CommunityChallengeController::class, 'destroy']);
+    Route::post('/communities/{community}/challenges/{challenge}/join', [CommunityChallengeController::class, 'join']);
+    Route::post('/communities/{community}/challenges/{challenge}/leave', [CommunityChallengeController::class, 'leave']);
 
     // ─── Salas de chat por comunidad ────────────────────────
-    Route::get('/communities/{community}/rooms', [\App\Http\Controllers\CommunityRoomController::class, 'index']);
-    Route::post('/communities/{community}/rooms', [\App\Http\Controllers\CommunityRoomController::class, 'store']);
-    Route::post('/rooms/{room}/join', [\App\Http\Controllers\CommunityRoomController::class, 'join']);
-    Route::post('/rooms/{room}/leave', [\App\Http\Controllers\CommunityRoomController::class, 'leave']);
+    Route::get('/communities/{community}/rooms', [CommunityRoomController::class, 'index']);
+    Route::post('/communities/{community}/rooms', [CommunityRoomController::class, 'store']);
+    Route::post('/rooms/{room}/join', [CommunityRoomController::class, 'join']);
+    Route::post('/rooms/{room}/leave', [CommunityRoomController::class, 'leave']);
 
     // ─── Hashtags: posts por tag (slug) ─────────────────────
     Route::get('/tags/{slug}/posts', [TagController::class, 'posts']);
 
     // ─── Tienda ─────────────────────────────────────────────
-    Route::get('/store', [\App\Http\Controllers\StoreController::class, 'index']);
-    Route::get('/store/mine', [\App\Http\Controllers\StoreController::class, 'mine']);
-    Route::post('/store/items', [\App\Http\Controllers\StoreController::class, 'store']);
-    Route::post('/store/items/{item}/purchase', [\App\Http\Controllers\StoreController::class, 'purchase']);
-    Route::get('/me/cosmetics', [\App\Http\Controllers\StoreController::class, 'myCosmetics']);
-    Route::post('/store/items/{item}/apply', [\App\Http\Controllers\StoreController::class, 'apply']);
+    Route::get('/store', [StoreController::class, 'index']);
+    Route::get('/store/mine', [StoreController::class, 'mine']);
+    Route::post('/store/items', [StoreController::class, 'store']);
+    Route::post('/store/items/{item}/purchase', [StoreController::class, 'purchase']);
+    Route::get('/me/cosmetics', [StoreController::class, 'myCosmetics']);
+    Route::post('/store/items/{item}/apply', [StoreController::class, 'apply']);
 
     // ─── Coins: check-in diario y tips ─────────────────────
-    Route::get('/checkin/status', [\App\Http\Controllers\DailyCheckinController::class, 'status']);
-    Route::post('/checkin', [\App\Http\Controllers\DailyCheckinController::class, 'claim'])->middleware('throttle:checkin');
-    Route::post('/users/{user}/tip', [\App\Http\Controllers\TipController::class, 'store'])->middleware('throttle:tips');
+    Route::get('/checkin/status', [DailyCheckinController::class, 'status']);
+    Route::post('/checkin', [DailyCheckinController::class, 'claim'])->middleware('throttle:checkin');
+    Route::post('/users/{user}/tip', [TipController::class, 'store'])->middleware('throttle:tips');
 
     // ─── XP y niveles ──────────────────────────────────────
-    Route::get('/xp/summary', [\App\Http\Controllers\XpController::class, 'summary']);
+    Route::get('/xp/summary', [XpController::class, 'summary']);
 
+});
+
+// ─── Panel de Administrador del Sistema (solo is_global_admin) ───
+Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function () {
+    Route::get('/logs', [AdminController::class, 'logs']);
 });

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\CheckAdminMiddleware;
+use App\Http\Middleware\IsGlobalAdminMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,7 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
         $middleware->alias([
-            'admin' => \App\Http\Middleware\CheckAdminMiddleware::class,
+            'admin' => CheckAdminMiddleware::class,
+            'is_admin' => IsGlobalAdminMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
